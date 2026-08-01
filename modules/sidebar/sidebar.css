@@ -1,0 +1,285 @@
+/* Боковая панель */
+#sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 60px;
+    background: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.2);
+    transition: width 0.3s ease, background 0.3s ease, color 0.3s ease;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    white-space: nowrap;
+    overflow: hidden;              /* полностью запрещает скроллбар внутри панели */
+}
+
+#sidebar:hover {
+    width: 220px;
+}
+
+/* Основной контент сдвигается при раскрытии */
+.main-area {
+    margin-left: 60px;
+    transition: margin-left 0.3s ease;
+}
+body.sidebar-expanded .main-area {
+    margin-left: 220px;
+}
+
+/* Верхний блок */
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.2rem 0.8rem 0.8rem;
+    border-bottom: 1px solid var(--sidebar-border);
+}
+.sidebar-logo { display: flex; align-items: center; gap: 0.5rem; }
+.logo-icon {
+    background: var(--accent);
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.4rem;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+.logo-text {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--sidebar-logo-text);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s;
+}
+#sidebar:hover .logo-text { opacity: 1; visibility: visible; }
+.icon-btn {
+    background: none;
+    border: none;
+    color: var(--sidebar-icon);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0.3rem;
+    border-radius: 4px;
+    transition: color 0.2s, background 0.2s;
+    flex-shrink: 0;
+}
+.icon-btn:hover { color: var(--sidebar-text); background: var(--sidebar-hover); }
+
+/* Поиск */
+.sidebar-search {
+    padding: 0.6rem 0.8rem;
+    display: flex;
+    align-items: center;
+    background: var(--sidebar-search-bg);
+    margin: 0.6rem 0;
+    gap: 0.5rem;
+}
+.sidebar-search .search-icon { opacity: 0.8; font-size: 0.9rem; flex-shrink: 0; color: var(--sidebar-icon); }
+.sidebar-search input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--sidebar-text);
+    font-size: 0.85rem;
+    width: 100%;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s;
+}
+#sidebar:hover .sidebar-search input { opacity: 1; visibility: visible; }
+.sidebar-search input::placeholder { color: var(--sidebar-muted); }
+
+/* Навигация */
+.sidebar-nav {
+    flex: 1;
+    min-height: 0;
+    padding: 0.5rem 0;
+    overflow-y: hidden;           /* скроллбар скрыт в свёрнутом состоянии */
+    overflow-x: hidden;
+}
+#sidebar:hover .sidebar-nav {
+    overflow-y: auto;             /* появляется при наведении, только если контент превышает высоту */
+}
+
+/* Секции */
+.nav-section { margin-bottom: 0.5rem; }
+.nav-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--sidebar-section-text);
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+.section-icon {
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    opacity: 0.7;
+    margin-right: 0.2rem;        /* чтобы иконка не прилипала */
+}
+.section-label {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s;
+}
+#sidebar:hover .section-label { opacity: 1; visibility: visible; }
+
+/* Пункты меню */
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.65rem 0.8rem;
+    color: var(--sidebar-text);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background 0.15s, color 0.15s;
+}
+.nav-item:hover { background: var(--sidebar-hover); color: var(--sidebar-text-hover); }
+.nav-item.active {
+    background: var(--sidebar-active-bg);
+    color: var(--sidebar-active-text);
+    font-weight: 600;
+}
+.nav-icon { font-size: 1.1rem; width: 20px; text-align: center; flex-shrink: 0; }
+.nav-label {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s;
+}
+#sidebar:hover .nav-label { opacity: 1; visibility: visible; }
+
+/* Нижняя часть */
+.sidebar-footer {
+    padding: 1rem 0.8rem;
+    border-top: 1px solid var(--sidebar-border);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s;
+}
+#sidebar:hover .sidebar-footer { opacity: 1; visibility: visible; }
+
+/* Пользователь */
+.user-block { display: flex; align-items: center; gap: 0.6rem; }
+.user-avatar {
+    width: 32px; height: 32px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: bold; font-size: 1rem;
+    flex-shrink: 0;
+}
+.user-details { flex: 1; min-width: 0; }
+.user-name { font-size: 0.85rem; font-weight: 600; color: var(--sidebar-text); }
+.user-role { font-size: 0.7rem; color: var(--sidebar-muted); }
+.user-block button {
+    background: var(--sidebar-button-bg);
+    border: none;
+    color: var(--sidebar-text);
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+}
+.user-block button:hover { background: var(--sidebar-hover); }
+
+/* Переключатель темы */
+.theme-switch { display: flex; gap: 0.4rem; }
+.theme-option {
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    background: var(--sidebar-button-bg);
+    transition: background 0.2s;
+    color: var(--sidebar-text);
+}
+.theme-option.active {
+    background: var(--sidebar-active-bg);
+    box-shadow: 0 0 0 2px var(--accent);
+}
+.theme-option:hover { background: var(--sidebar-hover); }
+
+/* Скроллбар для навигации (только при раскрытии) */
+.sidebar-nav::-webkit-scrollbar { width: 4px; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: var(--sidebar-scrollbar); border-radius: 2px; }
+.sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+
+/* Кнопка-фиксатор (скрепка) */
+.pin-btn {
+    opacity: 0.7;
+    /* filter: grayscale(40%); */
+    transition: opacity 0.2s ease, filter 0.2s ease;
+}
+.pin-btn:hover {
+    opacity: 0.8;
+    filter: none;
+}
+.pin-btn.active {
+    opacity: 1;
+    filter: none;
+}
+.pin-icon {
+    display: inline-block;
+    transition: transform 0.25s ease;
+}
+.pin-btn.active .pin-icon {
+    transform: rotate(-45deg);
+}
+
+/* Когда панель закреплена */
+body.sidebar-pinned #sidebar {
+    width: 220px;
+}
+body.sidebar-pinned #sidebar .sidebar-nav {
+    overflow-y: auto;
+}
+body.sidebar-pinned .logo-text,
+body.sidebar-pinned .nav-label,
+body.sidebar-pinned .section-label,
+body.sidebar-pinned .sidebar-search input,
+body.sidebar-pinned .sidebar-footer {
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+.no-transition {
+    transition: none !important;
+}
+
+/* Принудительно скрываем содержимое при сворачивании панели */
+body.sidebar-collapsing .logo-text,
+body.sidebar-collapsing .nav-label,
+body.sidebar-collapsing .section-label,
+body.sidebar-collapsing .sidebar-search input,
+body.sidebar-collapsing .sidebar-footer {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    transition: none !important;
+}
+
+/* Отключаем hover-раскрытие во время сворачивания */
+body.sidebar-collapsing:not(.sidebar-pinned) #sidebar:hover {
+    width: 60px;
+}

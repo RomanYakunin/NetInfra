@@ -1,0 +1,1270 @@
+
+/* ---------- Модальные формы ---------- */
+.add-form-modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 3000;
+    justify-content: center;
+    align-items: center;
+}
+.add-form-modal.visible {
+    display: flex;
+}
+
+.add-form-modal .modal-content {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    padding: 1.8rem 2rem;
+    border-radius: 12px;
+    max-width: 700px;
+    width: 90%;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    border: 1px solid var(--border-color);
+}
+
+.add-form-modal h3 {
+    margin-bottom: 1.2rem;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--accent);
+    text-align: center;
+}
+
+.add-form-modal .form-group {
+    margin-bottom: 1rem;
+}
+
+.add-form-modal label {
+    /* display: block; */
+    font-weight: 500;
+    margin-bottom: 0.3rem;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.add-form-modal input,
+.add-form-modal select,
+.add-form-modal textarea {
+    resize: vertical;
+    min-height: 60px;
+    max-height: 300px;  /* опционально, чтобы не росло бесконечно */
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+}
+
+.add-form-modal input:focus,
+.add-form-modal select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(0, 180, 216, 0.3);
+}
+
+.add-form-modal .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.8rem;
+    margin-top: 1.8rem;
+}
+
+.add-form-modal .btn {
+    padding: 0.5rem 1.2rem;
+    border: none;
+    border-radius: 6px;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.2s;
+}
+.add-form-modal .btn:hover {
+    background: var(--accent-hover);
+}
+.add-form-modal .btn.secondary {
+    background: var(--button-secondary-bg);
+    color: var(--text-primary);
+}
+.add-form-modal .btn.secondary:hover {
+    background: var(--button-secondary-hover);
+}
+
+.form-error {
+    color: var(--danger);
+    font-size: 0.85rem;
+    margin-top: 0.3rem;
+}
+
+/* ---------- Поисковые селекты ---------- */
+.searchable-select {
+    position: relative;
+    width: 100%;
+}
+
+.searchable-select-input {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+    cursor: pointer;
+}
+.searchable-select-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(0, 180, 216, 0.3);
+}
+
+.searchable-select-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    max-height: 220px;
+    overflow-y: auto;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    z-index: 10;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    animation: dropDown 0.15s ease-out;
+}
+.searchable-select-input:focus + .searchable-select-dropdown,
+.searchable-select-dropdown:hover {
+    display: block;
+}
+
+.searchable-select-option {
+    padding: 0.6rem 0.8rem;
+    cursor: pointer;
+    color: var(--text-primary);
+    transition: background 0.15s;
+}
+.searchable-select-option:hover {
+    background: var(--table-hover);
+}
+.searchable-select-option.add-new {
+    font-style: normal;
+    color: var(--accent);
+    border-top: 1px solid var(--border-color);
+}
+
+@keyframes dropDown {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Стили окна оповещений */
+.alert-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+.alert-row:last-child { border-bottom: none; }
+.alert-info { flex: 1; }
+.alert-label { font-weight: 600; display: block; margin-bottom: 0.2rem; }
+.alert-desc { font-size: 0.8rem; color: var(--text-secondary); }
+.alert-controls { display: flex; align-items: center; gap: 0.8rem; }
+
+/* Переключатель (switch) */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #ccc;
+    transition: 0.3s;
+    border-radius: 24px;
+}
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px; width: 18px;
+    left: 3px; bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+}
+input:checked + .slider { background-color: var(--accent); }
+input:checked + .slider:before { transform: translateX(20px); }
+
+/* Ползунок (range) */
+input[type="range"] {
+    width: 120px;
+    height: 6px;
+    -webkit-appearance: none;
+    appearance: none;            /* ← добавлено стандартное свойство */
+    background: #ddd;
+    border-radius: 63px;
+    padding: 0.6rem 0.8rem;
+    outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px; height: 18px;
+    background: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+}
+input[type="range"]:disabled {
+    opacity: 0.5;
+}
+
+.move-options { display: flex; gap: 0.5rem; }
+.move-option { padding: 0.5rem 1rem; border: 2px solid var(--border-color); border-radius: 6px; background: transparent; color: var(--text-primary); cursor: pointer; transition: 0.2s; }
+.move-option.active { border-color: var(--accent); background: rgba(59,89,152,0.1); color: var(--accent); }
+
+/* Контекстное меню */
+/* .context-menu {
+    display: none;
+    position: fixed;
+    background: var(--bg-card, #ffffff);
+    border: 1px solid var(--border-color, #dee2e6);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 2000;
+    min-width: 200px;
+    padding: 0.3rem 0;
+}
+
+.context-menu .menu-item {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--text-primary, #000000);
+    transition: background 0.15s;
+}
+
+.context-menu .menu-item:hover {
+    background: var(--table-hover, rgba(59,89,152,0.05));
+}
+
+.context-menu hr {
+    margin: 0.3rem 0;
+    border: none;
+    border-top: 1px solid var(--border-color, #dee2e6);
+} */
+ .mac-duplicate-msg {
+    color: var(--danger, #e63946);
+    font-size: 0.85rem;
+    margin-top: 0.3rem;
+}
+#deleteConfirmModal .modal-content p {
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+}
+#deleteConfirmModal .btn.danger {
+    width: 100%;
+    margin-bottom: 0.5rem;
+}
+
+.modal {
+    display: none; /* скрыто по умолчанию */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 10000;
+    justify-content: center;
+    align-items: center;
+}
+.modal.visible {
+    display: flex; /* показывается, когда JS добавляет класс visible */
+}
+.searchable-select-option.add-new {
+    font-style: normal;   /* было italic */
+    color: var(--accent);
+    border-top: 1px solid var(--border-color);
+}
+
+/* Явные стили для универсального модального окна metaAddModal */
+#metaAddModal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6);
+    z-index: 3000;
+    justify-content: center;
+    align-items: center;
+}
+#metaAddModal.visible {
+    display: flex;
+}
+#metaAddModal .modal-content {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    padding: 1.8rem 2rem;
+    border-radius: 12px;
+    max-width: 520px;
+    width: 90%;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    border: 1px solid var(--border-color);
+}
+.add-form-modal {
+    display: none;  /* скрыто по умолчанию */
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6);
+    z-index: 3000;
+    justify-content: center;
+    align-items: center;
+}
+.add-form-modal.visible {
+    display: flex;  /* показывается при добавлении класса visible */
+}
+
+/* ---------- Индикатор PoE в таблице ---------- */
+.poe-indicator {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin: 0 auto;
+}
+.poe-indicator.active {
+    background-color: var(--success, #28a745);
+    box-shadow: 0 0 6px var(--success);
+}
+.poe-indicator.inactive {
+    background-color: var(--danger, #dc3545);
+    box-shadow: 0 0 6px var(--danger);
+}
+.poe-indicator.partial {
+    background-color: #ffa500;
+    box-shadow: 0 0 6px #ffa500;
+}
+
+/* ---------- Переключатель Google ---------- */
+.checkbox-google {
+    display: inline-block;    
+    height: 28px;    
+    line-height: 28px;      
+    margin-right: 10px;       
+    position: relative;
+    vertical-align: middle;
+    font-size: 14px;
+    user-select: none;	
+}
+.checkbox-google .checkbox-google-switch {
+    display: inline-block;	
+    width: 36px;
+    height: 14px;	
+    border-radius: 20px;
+    position: relative;
+    top: 6px;			
+    vertical-align: top;
+    background: var(--switch-off-bg, #9f9f9f);
+    transition: background 0.2s;
+}
+.checkbox-google .checkbox-google-switch:before {
+    content: '';
+    display: inline-block;	
+    width: 20px;	
+    height: 20px;
+    position: absolute;
+    top: -3px;
+    left: -1px;
+    background: var(--switch-thumb, #fff);
+    border-radius: 50%;
+    box-shadow: 0 3px 1px -2px rgba(0,0,0,0.2), 0 2px 2px 0 rgba(0,0,0,0.14), 0 1px 5px 0 rgba(0,0,0,0.12);
+    transition: transform 0.15s, background 0.15s;		
+}
+.checkbox-google input[type=checkbox] {
+    display: block;	
+    width: 0;
+    height: 0;	
+    position: absolute;
+    z-index: -1;
+    opacity: 0;
+}
+.checkbox-google input[type=checkbox]:checked + .checkbox-google-switch {
+    background: var(--switch-on-bg, #58e679);
+}
+.checkbox-google input[type=checkbox]:checked + .checkbox-google-switch:before {
+    background: var(--switch-on-thumb, #28a745);
+    transform: translateX(18px);
+}
+ 
+/* Hover */
+.checkbox-google input[type="checkbox"]:not(:disabled) + .checkbox-google-switch {
+    cursor: pointer;
+    border-color: rgba(0, 0, 0, .3);
+}
+ 
+/* Active/Focus */
+.checkbox-google input[type="checkbox"]:not(:disabled):active + .checkbox-google-switch:before, 
+.checkbox-google input[type="checkbox"]:not(:disabled):focus + .checkbox-google-switch:before {
+    animation: checkbox-active-on 0.5s forwards linear;
+}
+@keyframes checkbox-active-on {
+    0% {
+        box-shadow: 0 0 0 0 rgba(212,212,212, 0);
+    }
+    99% {
+        box-shadow: 0 0 0 10px rgba(212,212,212, 0.5);
+    }
+}
+ 
+.checkbox-google input[type="checkbox"]:not(:disabled):checked:active + .checkbox-google-switch:before, 
+.checkbox-google input[type="checkbox"]:not(:disabled):checked:focus + .checkbox-google-switch:before {
+    animation: checkbox-active-off 0.5s forwards linear;
+}
+@keyframes checkbox-active-off {
+    0% {
+        box-shadow: 0 0 0 0 rgba(154,190,247, 0);
+    }
+    99% {
+        box-shadow: 0 0 0 10px rgba(154,190,247, 0.5);
+    }
+}
+ 
+/* Disabled */
+.checkbox-google input[type=checkbox]:disabled + .checkbox-google-switch {
+    filter: grayscale(60%);
+    border-color: rgba(0, 0, 0, .1);
+}
+.checkbox-google input[type=checkbox]:disabled + .checkbox-google-switch:before {
+    background: #eee;
+}
+
+/* ---------- Индикатор PoE в таблице ---------- */
+.poe-indicator {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin: 0 auto;
+}
+.poe-indicator.active {
+    background-color: var(--success, #28a745);
+    box-shadow: 0 0 6px var(--success);
+}
+.poe-indicator.inactive {
+    background-color: var(--danger, #dc3545);
+    box-shadow: 0 0 6px var(--danger);
+}
+
+/* ---------- Плитки выбора устройств стека ---------- */
+.checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+    user-select: none;
+    padding: 0.5rem 0;
+}
+
+.checkbox-wrapper {
+    display: block;
+}
+
+.checkbox-input {
+    clip: rect(0 0 0 0);
+    clip-path: inset(100%);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+}
+
+/* Плитка */
+.checkbox-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 7rem;
+    min-height: 7rem;
+    border-radius: 0.75rem;
+    border: 2px solid var(--border-color);
+    background-color: var(--bg-card);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+    cursor: pointer;
+    position: relative;
+    padding: 0.6rem 0.4rem;
+    color: var(--text-primary);
+}
+
+/* Индикатор выбора (кружок с галочкой) */
+.checkbox-tile::before {
+    content: "";
+    position: absolute;
+    display: block;
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid var(--border-color);
+    background-color: var(--bg-card);
+    border-radius: 50%;
+    top: 0.4rem;
+    left: 0.4rem;
+    opacity: 0;
+    transform: scale(0);
+    transition: opacity 0.2s, transform 0.2s, background-color 0.2s, border-color 0.2s;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192' fill='%23FFFFFF' viewBox='0 0 256 256'%3E%3Crect width='256' height='256' fill='none'%3E%3C/rect%3E%3Cpolyline points='216 72.005 104 184 48 128.005' fill='none' stroke='%23FFFFFF' stroke-linecap='round' stroke-linejoin='round' stroke-width='32'%3E%3C/polyline%3E%3C/svg%3E");
+    background-size: 13px;
+    background-repeat: no-repeat;
+    background-position: 50% 50%;
+}
+
+.checkbox-tile:hover {
+    border-color: var(--accent);
+}
+
+.checkbox-tile:hover::before {
+    opacity: 0.7;
+    transform: scale(0.9);
+}
+
+/* Активная плитка */
+.checkbox-input:checked + .checkbox-tile {
+    border-color: var(--accent);
+    background-color: var(--table-hover);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.25);
+    color: var(--text-primary);
+}
+
+.checkbox-input:checked + .checkbox-tile::before {
+    opacity: 1;
+    transform: scale(1);
+    background-color: var(--accent);
+    border-color: var(--accent);
+}
+
+/* Текст внутри плитки */
+.checkbox-label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
+    text-align: center;
+    word-break: break-word;
+    color: inherit;
+}
+
+.checkbox-detail {
+    font-size: 0.65rem;
+    opacity: 0.85;
+    text-align: center;
+    margin-top: 0.15rem;
+    word-break: break-word;
+    color: inherit;
+}
+
+.checkbox-serial {
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}
+
+.checkbox-mac {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.65rem;
+    opacity: 0.9;
+    margin-top: 0.25rem;
+}
+
+/* Кнопка «Выбрать всё» */
+.stack-select-all {
+    margin-top: 0;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border-color);
+    align-self: flex-start;
+}
+
+/* ---------- Стилизованный список устройств стека ---------- */
+/* ---------- Список устройств стека ---------- */
+.stack-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    max-height: 220px;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+}
+.stack-list-item {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.5rem 0.8rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    transition: background 0.15s;
+}
+.stack-list-item:hover {
+    background: var(--table-hover);
+}
+.stack-list-item .stack-checkbox {
+    flex-shrink: 0;
+    accent-color: var(--accent);
+    width: 1rem;
+    height: 1rem;
+}
+.stack-list-item .stack-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    flex: 1;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+}
+.stack-list-item .stack-detail {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+}
+.stack-list-item .stack-detail-label {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+.stack-list-item .stack-detail-value {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 0.3px;
+}
+/* ---------- Радио-плитки выбора направления ---------- */
+.move-options.radio-tiles {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+}
+/* Сами контейнеры и плитки уже описаны в теме (radio-container, radio-tile, radio-tile-label). 
+   Убедитесь, что эти классы присутствуют. Если нет – добавьте правила ниже: */
+.radio-container {
+    position: relative;
+    height: 44px;
+}
+.radio-container .radio-input {
+    opacity: 0;
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    margin: 0;
+    cursor: pointer;
+    z-index: 2;
+}
+.radio-container .radio-tile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    border: 1.5px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-card);
+    transition: all 0.2s ease;
+    padding: 0 0.8rem;
+    box-sizing: border-box;
+}
+.radio-container .radio-tile-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+.radio-container .radio-input:checked + .radio-tile {
+    background-color: var(--accent);
+    border-color: var(--accent);
+}
+.radio-container .radio-input:checked + .radio-tile .radio-tile-label {
+    color: #fff;
+}
+.radio-container .radio-tile:hover {
+    border-color: var(--accent);
+    background-color: var(--table-hover);
+}
+
+#moveModal .modal-content {
+    max-width: 700px;
+    min-height: 500px;
+    max-height: 85vh;
+}
+#moveModal .stack-list {
+    max-height: 46vh;
+    overflow-y: auto;
+}
+#stack-members-checkboxes {
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* Компактный вид для одного устройства */
+#moveModal.single-device .modal-content {
+    max-width: 450px;
+}
+#moveModal.single-device .stack-list {
+    max-height: none;
+}
+/* Стили для вложенных элементов стека */
+.stack-nested {
+    border-left: 2px dashed var(--border-color);
+    margin-left: 1rem;
+    padding-left: 0.5rem;
+}
+
+.stack-list-item .expand-arrow {
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.ky-invalid {
+    border-color: var(--danger) !important;
+    box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.25);
+}
+textarea {
+    resize: vertical;
+    height: 300px;
+    min-height: 150px;
+    max-height: 500px;
+}
+
+
+/* Модули в форме */
+.module-input {
+    width: 70px;
+    padding: 2px 4px;
+    font-size: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+}
+
+/* Сервисы */
+.services-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+.service-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0.6rem 0.8rem;
+    cursor: pointer;
+    user-select: none;
+    min-width: 140px;
+}
+.service-card .service-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+.service-card .service-status {
+    font-size: 0.75rem;
+    margin-top: 0.2rem;
+}
+.service-connected { color: #2e7d32; }
+.service-disconnected { color: #999; }
+.toggle-switch {
+    width: 60px;
+    height: 24px;
+    background: #ccc;
+    border-radius: 12px;
+    margin-top: 0.3rem;
+    position: relative;
+    cursor: pointer;
+}
+.toggle-knob {
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    transition: left 0.2s;
+}
+/* ========================================
+   Стили для досье оборудования (добавление/редактирование)
+   Интегрированы с переменными темы
+   ======================================== */
+
+.equipment-dossier {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+    margin: -0.5rem 0; /* компенсация отступов внутри модального окна */
+}
+
+.dossier-section {
+    background: var(--bg-card);
+    border-radius: 8px;
+    padding: 1.2rem;
+    border: 1px solid var(--border-color);
+}
+
+.dossier-section h4 {
+    color: var(--accent);
+    margin-bottom: 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dossier-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.8rem;
+}
+
+.dossier-item {
+    background: var(--bg-card);
+    padding: 0.7rem 0.9rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    transition: border-color 0.2s;
+}
+.dossier-item:focus-within {
+    border-color: var(--accent);
+}
+
+.dossier-item .label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.3rem;
+    font-weight: 500;
+}
+
+.dossier-item .value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Поля ввода и селекты внутри досье */
+.dossier-input,
+.dossier-select {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 0.9rem;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.dossier-input:focus,
+.dossier-select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(0, 180, 216, 0.25);
+}
+.dossier-input.mac-address {
+    font-family: 'Fira Code', monospace;
+}
+
+/* Поисковый селект внутри досье адаптируется автоматически, но для единообразия
+   можно добавить небольшие подстройки */
+.dossier-item .searchable-select-input {
+    padding: 0.5rem;
+    font-size: 0.9rem;
+}
+
+/* ========== Модули (SFP и БП) ========== */
+.modules-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.2rem;
+    align-items: start;
+}
+
+/* Сообщение «Нет модулей» */
+.modules-empty-message {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 1rem;
+}
+/* Кнопка «+» всегда в конце */
+#module-column-add {
+    min-width: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+/* Стили для пунктов меню */
+.module-type-menu-item:hover {
+    background: var(--table-hover);
+    color: var(--accent);
+}
+.module-column {
+    background: var(--bg-card);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+}
+
+.module-column-header {
+    background: var(--table-hover);
+    padding: 0.7rem 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.module-list {
+    padding: 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+.module-tile {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0.7rem;
+    transition: background 0.2s;
+}
+.module-tile:hover {
+    background: var(--table-hover);
+}
+
+.module-tile .module-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    margin-bottom: 0.3rem;
+}
+
+.module-tile .module-details {
+    display: flex;
+    gap: 0.6rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.module-tile .module-details span {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+}
+
+/* Поля ввода внутри модуля */
+.module-input {
+    width: auto;
+    min-width: 70px;
+    max-width: 110px;
+    padding: 0.25rem 0.4rem;
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    font-size: 0.75rem;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    outline: none;
+}
+.module-input:focus {
+    border-color: var(--accent);
+}
+
+.add-module-tile {
+    background: transparent;
+    border: 2px dashed var(--border-color);
+    border-radius: 6px;
+    padding: 0.65rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+.add-module-tile:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0, 180, 216, 0.05);
+}
+
+/* Кнопка удаления модуля (используем существующие классы .btn) */
+.module-tile .btn.small.danger {
+    background: var(--danger);
+    color: #fff;
+    border: none;
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.7rem;
+    line-height: 1;
+    margin-left: auto;
+}
+.module-tile .btn.small.danger:hover {
+    background: #c0392b;
+}
+
+/* ========== Подключённые сервисы ========== */
+/* Переопределяем .services-grid ТОЛЬКО внутри досье, чтобы не ломать другие места */
+.equipment-dossier .services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.8rem;
+    margin-top: 0.5rem;
+}
+
+.service-card {
+    background: var(--bg-card);
+    padding: 0.8rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    text-align: center;
+    cursor: pointer;
+    user-select: none;
+    transition: box-shadow 0.2s, border-color 0.2s;
+    position: relative;
+}
+.service-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-color: var(--accent);
+}
+
+.service-card .service-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.service-card .service-status {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.6rem;
+    border-radius: 12px;
+    display: inline-block;
+}
+
+.service-connected {
+    background: rgba(39, 174, 96, 0.15);
+    color: var(--success, #27ae60);
+}
+.service-disconnected {
+    background: rgba(108, 117, 125, 0.15);
+    color: var(--text-secondary);
+}
+
+/* Переключатель RADIUS / TACACS+ */
+.radius-tacacs {
+    position: relative;
+}
+
+.toggle-switch {
+    margin-top: 0.5rem;
+    width: 80px;
+    height: 26px;
+    background: var(--border-color);
+    border-radius: 13px;
+    position: relative;
+    cursor: pointer;
+    display: inline-block;
+    transition: background 0.2s;
+}
+
+.toggle-knob {
+    position: absolute;
+    width: 38%;
+    height: 22px;
+    background: var(--accent);
+    border-radius: 11px;
+    top: 2px;
+    left: 2px;
+    transition: left 0.2s, background 0.2s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+/* Стили для активного состояния переключателя (когда выбрано одно из двух) */
+.toggle-switch.active-left .toggle-knob {
+    left: 2px;
+}
+.toggle-switch.active-right .toggle-knob {
+    left: 44%; /* чуть больше половины */
+}
+
+/* Строка заголовка с кнопкой расширения */
+.modal-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.2rem; /* как у стандартного h3 */
+    gap: 1rem;
+}
+.modal-title-row h3 {
+    margin: 0;
+    flex: 1;
+    text-align: center; /* заголовок по центру, кнопка справа */
+}
+.modal-expand-btn {
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0.2rem 0.5rem;
+    line-height: 1;
+    transition: background 0.2s, color 0.2s;
+    flex-shrink: 0;
+}
+.modal-expand-btn:hover {
+    background: var(--table-hover);
+    color: var(--accent);
+}
+
+/* Расширенное окно */
+.add-form-modal .modal-content.wide {
+    max-width: 900px;
+}
+
+#moduleAddModal .sfp-only {
+    display: block;
+}
+.module-type-menu-item:hover {
+    background: var(--table-hover);
+}
+.dossier-input:disabled, .dossier-select:disabled {
+    opacity: 0.7;
+    background: var(--table-hover);
+}
+/* Вариант 1: обычный блюр */
+.password-blur {
+    filter: blur(4px);
+    transition: filter 0.2s;
+}
+.password-blur:focus {
+    filter: none;
+}
+
+/* Вариант 2: пиксельный блюр (имитация пикселизации) */
+/*
+.password-blur {
+    font-family: 'Courier New', monospace;
+    letter-spacing: -0.2em;
+    color: transparent;
+    text-shadow: 0 0 6px rgba(0,0,0,0.7);
+    transition: all 0.2s;
+}
+.password-blur:focus {
+    color: initial;
+    text-shadow: none;
+    letter-spacing: normal;
+}
+*/
+/* Кнопка переключения режима одиночное/стек */
+.mode-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    cursor: pointer;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: background 0.2s, color 0.2s;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+.mode-toggle-btn:hover {
+    background: var(--table-hover);
+    border-color: var(--accent);
+}
+.mode-toggle-btn:active {
+    background: var(--accent);
+    color: #fff;
+}
+#modalExpandBtn {
+    order: -1;
+    margin-right: auto;
+}
+.unique-error-block {
+    grid-column: 1 / -1;      /* растягиваем на всю ширину сетки */
+    margin-top: 0.5rem;
+    color: var(--danger);
+    font-size: 0.85rem;
+}
+
+.input-error {
+    border-color: var(--danger) !important;
+    box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.25);
+}
+
+.lldp-section {
+    border-left: 4px solid var(--accent);
+    background: var(--bg-card);
+}
+.lldp-neighbors-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.lldp-neighbors-table th,
+.lldp-neighbors-table td {
+    padding: 0.3rem 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.85rem;
+}
+.lldp-neighbors-table input {
+    width: 100%;
+    border: 1px solid transparent;
+    background: transparent;
+    padding: 0.2rem;
+}
+.lldp-neighbors-table input:focus {
+    border-color: var(--accent);
+    background: var(--bg-card);
+}
+.dossier-section h4 {
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.section-arrow {
+    font-size: 0.8rem;
+    transition: transform 0.2s;
+    display: inline-block;
+    width: 1em;
+}
+.section-body {
+    margin-top: 0.8rem;
+}

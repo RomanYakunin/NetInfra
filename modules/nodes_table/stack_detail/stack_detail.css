@@ -1,0 +1,74 @@
+/* modules/nodes_table/stack_detail/stack_detail.css */
+
+/* Сетка для устройств стека */
+.stack-devices-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Плитка устройства */
+.stack-device-tile {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0.7rem;
+    transition: background 0.2s;
+}
+.stack-device-tile:hover {
+    background: var(--table-hover);
+}
+
+.stack-device-tile .device-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.stack-device-tile .device-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+}
+
+.stack-device-tile .device-details {
+    display: flex;
+    gap: 0.8rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    flex-wrap: wrap;
+}
+
+.stack-device-tile .device-details span {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+}
+
+.stack-device-tile .device-ip {
+    background: var(--bg-body);
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+/* Модальное окно */
+#stackDetailModal .modal-content {
+    background: var(--bg-panel);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.8rem 2rem;
+    max-width: 800px;
+    width: 95%;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}

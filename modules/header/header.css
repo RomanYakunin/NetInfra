@@ -1,0 +1,265 @@
+/* =================================================================
+   header.css – Стили верхней панели и модального окна сканирования
+   ================================================================= */
+.header {
+    background: var(--bg-header);
+    border-bottom: 1px solid var(--border-color);
+    padding: 0.7rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-shrink: 0;
+}
+.header-left h1 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--accent);
+}
+.header-right {
+    margin-left: auto;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+.stat-block {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: var(--bg-card);
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+.stat-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+}
+.stat-dot.green {
+    background: var(--success);
+    box-shadow: 0 0 6px var(--success);
+}
+.stat-dot.red {
+    background: var(--danger);
+    box-shadow: 0 0 6px var(--danger);
+}
+.stat-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+.btn-icon {
+    background: none;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: 0.2s;
+}
+.btn-icon:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+.theme-toggle {
+    margin-left: 1rem;
+    font-size: 1.2rem;
+    padding: 0.3rem 0.5rem;
+    cursor: pointer;
+}
+.refresh-status-btn {
+    margin-left: 1rem;
+    font-size: 0.9rem;
+    padding: 0.4rem 1rem;
+    white-space: nowrap;
+}
+
+/* =================================================================
+   Модальное окно сканирования сети
+   ================================================================= */
+#pingModal .modal-content {
+    max-width: 700px;
+}
+
+/* Вкладки сканирования */
+.ping-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid var(--border-color);
+}
+.ping-tab {
+    padding: 0.5rem 1rem;
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    transition: 0.2s;
+}
+.ping-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+.ping-tab-content {
+    display: none;
+}
+.ping-tab-content.active {
+    display: block;
+}
+.ping-tab-content .modal-actions {
+    justify-content: flex-start;
+}
+
+/* ---------- Плитки VLAN ---------- */
+.vlan-tile-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    user-select: none;
+}
+.vlan-tile-label {
+    position: relative;
+}
+.vlan-tile-checkbox {
+    clip: rect(0 0 0 0);
+    clip-path: inset(100%);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+}
+.vlan-tile-checkbox:checked + .vlan-tile-content {
+    border-color: var(--accent);
+    box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+    color: var(--accent);
+}
+.vlan-tile-checkbox:checked + .vlan-tile-content::before {
+    transform: scale(1);
+    opacity: 1;
+    background-color: var(--accent);
+    border-color: var(--accent);
+}
+.vlan-tile-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 5.5rem;
+    min-height: 5.5rem;
+    border-radius: 0.5rem;
+    border: 2px solid var(--border-color);
+    background-color: var(--bg-card);
+    box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+    transition: 0.15s ease;
+    cursor: pointer;
+    position: relative;
+    padding: 0.3rem;
+}
+.vlan-tile-content::before {
+    content: "";
+    position: absolute;
+    display: block;
+    width: 1.1rem;
+    height: 1.1rem;
+    border: 2px solid var(--border-color);
+    background-color: var(--bg-card);
+    border-radius: 50%;
+    top: 0.25rem;
+    left: 0.25rem;
+    opacity: 0;
+    transform: scale(0);
+    transition: 0.25s ease;
+}
+.vlan-tile-content:hover {
+    border-color: var(--accent);
+}
+.vlan-tile-content:hover::before {
+    transform: scale(1);
+    opacity: 1;
+}
+.vlan-tile-name {
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    text-align: center;
+    word-break: break-word;
+}
+.vlan-tile-range {
+    color: var(--text-secondary);
+    font-size: 0.65rem;
+    text-align: center;
+    margin-top: 0.2rem;
+}
+
+/* Плитка добавления (пунктирная) */
+.vlan-tile-add .vlan-tile-content {
+    border-style: dashed;
+    border-color: var(--border-color);
+    opacity: 0.7;
+}
+.vlan-tile-add .vlan-tile-content:hover {
+    border-color: var(--accent);
+    opacity: 1;
+}
+.vlan-tile-add .vlan-tile-content::before {
+    display: none;   /* убираем кружок выбора */
+}
+
+/* Контекстное меню пресета */
+.vlan-context-menu {
+    display: none;
+    position: fixed;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    z-index: 3500;
+    min-width: 160px;
+    padding: 0.3rem 0;
+}
+.vlan-context-menu .menu-item {
+    padding: 0.4rem 1rem;
+    cursor: pointer;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    transition: background 0.15s;
+}
+.vlan-context-menu .menu-item:hover {
+    background: var(--table-hover);
+}
+
+/* Прогресс-бар сканирования */
+#pingProgress {
+    margin: 1rem 0;
+}
+#pingProgressBar {
+    width: 100%;
+    height: 20px;
+}
+
+/* Таблица результатов */
+#pingResults {
+    margin-top: 1rem;
+    max-height: 300px;
+    overflow-y: auto;
+}
+#pingResults table {
+    width: 100%;
+    border-collapse: collapse;
+}
+#pingResults th, #pingResults td {
+    padding: 0.4rem 0.6rem;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.85rem;
+}
+#pingResults th {
+    background: var(--bg-header);
+    position: sticky;
+    top: 0;
+}

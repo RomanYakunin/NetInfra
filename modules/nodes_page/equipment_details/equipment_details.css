@@ -1,0 +1,60 @@
+/* Модальное окно подробностей */
+#equipmentDetailsModal .modal-content {
+    max-width: 900px;
+    width: 95%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* Статус-бейджи */
+.status-badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+.status-ok { background: #d4edda; color: #155724; }
+.status-cancelled { background: #f2dede; color: #a94442; }
+
+/* Принадлежность к стеку */
+.dossier-section.stack-info {
+    background: #f0f4ff;
+    border-color: #667eea;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    #equipmentDetailsModal .modal-content {
+        max-width: 100%;
+        width: 100%;
+        border-radius: 0;
+        padding: 1rem;
+    }
+    .dossier-grid {
+        grid-template-columns: 1fr;
+    }
+    .modules-container {
+        grid-template-columns: 1fr;
+    }
+    .services-grid {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    }
+    .modal-actions {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .modal-actions .btn {
+        flex: 1 1 auto;
+    }
+}
+
+@media (max-height: 600px) {
+    .dossier-section {
+        padding: 0.8rem;
+    }
+    .dossier-section h4 {
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+}
