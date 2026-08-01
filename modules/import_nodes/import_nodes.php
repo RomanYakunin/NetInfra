@@ -79,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
     <link rel="stylesheet" href="assets/css/styles.css">
     <link rel="stylesheet" href="modules/header/header.css">
     <link rel="stylesheet" href="modules/sidebar/sidebar.css">
-    <link rel="stylesheet" href="modules/nodes_table/nodes_table.css">
+    <link rel="stylesheet" href="modules/nodes_page/nodes_page.css">
     <style>
         .container { padding: 2rem; max-width: 1200px; margin: 0 auto; }
         .import-form { background: var(--bg-card); padding: 2rem; border-radius: 8px; box-shadow: var(--shadow); margin-bottom: 2rem; }
