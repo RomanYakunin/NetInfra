@@ -1,0 +1,254 @@
+/* modules/knowledge_base/knowledge_base.css — страница «База знаний» */
+
+.kb-page {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    align-items: flex-start;
+    min-height: 0;
+}
+
+/* ---------- Левая панель: таблицы ---------- */
+.kb-sidebar {
+    flex: 0 0 240px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 0.6rem;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 9rem);
+}
+.kb-sidebar-header {
+    padding: 0.7rem 0.9rem;
+    background: var(--bg-header);
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.kb-table-filter {
+    margin: 0.6rem;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.35rem;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-size: 0.82rem;
+}
+.kb-table-filter:focus { outline: none; border-color: var(--accent); }
+
+.kb-table-list {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 0.5rem;
+    overflow-y: auto;
+    flex: 1;
+}
+.kb-table-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.4rem 0.9rem;
+    cursor: pointer;
+    font-size: 0.83rem;
+    color: var(--text-primary);
+    border-left: 3px solid transparent;
+    transition: background 0.12s, border-color 0.12s;
+}
+.kb-table-item:hover { background: var(--table-hover, rgba(128,128,128,0.1)); }
+.kb-table-item.active {
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+    border-left-color: var(--accent);
+    font-weight: 600;
+}
+.kb-table-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kb-table-rows {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    background: rgba(128,128,128,0.15);
+    border-radius: 1rem;
+    padding: 0.05rem 0.4rem;
+    flex-shrink: 0;
+}
+
+/* ---------- Правая область ---------- */
+.kb-main {
+    flex: 1;
+    min-width: 0;
+}
+.kb-empty {
+    padding: 4rem 1rem;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.kb-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.8rem;
+    margin-bottom: 0.6rem;
+    flex-wrap: wrap;
+}
+.kb-header h2 {
+    margin: 0;
+    font-size: 1.15rem;
+    color: var(--text-primary);
+}
+
+/* Вкладки */
+.kb-tabs {
+    display: flex;
+    gap: 0.3rem;
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 0.8rem;
+}
+.kb-tab {
+    padding: 0.45rem 1rem;
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.88rem;
+    font-family: inherit;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: color 0.15s, border-color 0.15s;
+}
+.kb-tab:hover { color: var(--text-primary); }
+.kb-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    font-weight: 600;
+}
+
+/* Панель инструментов */
+.kb-toolbar {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 0.7rem;
+    flex-wrap: wrap;
+}
+.kb-search {
+    flex: 1 1 240px;
+    max-width: 380px;
+    padding: 0.45rem 0.7rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.35rem;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+}
+.kb-search:focus { outline: none; border-color: var(--accent); }
+.kb-select {
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.35rem;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+}
+
+/* Таблица */
+.kb-table-wrapper {
+    overflow-x: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    background: var(--bg-card);
+    max-height: calc(100vh - 20rem);
+    overflow-y: auto;
+}
+.kb-data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    white-space: nowrap;
+}
+.kb-data-table thead th {
+    padding: 0.5rem 0.7rem;
+    text-align: left;
+    background: var(--bg-header);
+    border-bottom: 2px solid var(--border-color);
+    color: var(--text-secondary);
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+.kb-data-table thead th.kb-sortable { cursor: pointer; user-select: none; }
+.kb-data-table thead th.kb-sortable:hover { color: var(--text-primary); }
+.kb-data-table thead th.sorted { color: var(--accent); }
+
+.kb-data-table tbody td {
+    padding: 0.4rem 0.7rem;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+    max-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.kb-data-table tbody tr:hover { background: var(--table-hover, rgba(128,128,128,0.08)); }
+
+.kb-strong { font-weight: 600; }
+.kb-muted { color: var(--text-secondary); font-size: 0.8rem; }
+.kb-error { color: var(--danger); }
+.kb-pk { font-size: 0.75rem; }
+
+.kb-row-actions { white-space: nowrap; }
+.kb-row-actions .btn {
+    padding: 0.2rem 0.45rem;
+    font-size: 0.8rem;
+    margin-left: 0.15rem;
+    line-height: 1;
+}
+.kb-row-actions .btn.danger { background: var(--danger); }
+.kb-row-actions .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Пагинация */
+.kb-pagination {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.7rem;
+    flex-wrap: wrap;
+}
+.kb-page-btn {
+    min-width: 2rem;
+    padding: 0.3rem 0.55rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.3rem;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-family: inherit;
+    transition: border-color 0.12s, background 0.12s;
+}
+.kb-page-btn:hover:not(:disabled) { border-color: var(--accent); }
+.kb-page-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 600;
+}
+.kb-page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.kb-page-gap { color: var(--text-secondary); padding: 0 0.2rem; }
+.kb-page-info {
+    margin-left: 0.6rem;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+/* Ошибки в модалках */
+#kbRowError, #kbColumnError {
+    color: var(--danger);
+    font-size: 0.82rem;
+    margin-bottom: 0.6rem;
+}
+
+/* Адаптив */
+@media (max-width: 900px) {
+    .kb-page { flex-direction: column; }
+    .kb-sidebar { flex: 1 1 auto; width: 100%; max-height: 16rem; }
+}

@@ -756,6 +756,9 @@ switch ($page) {
                     case 'users':
                         include 'modules/users/users_template.php';
                         break;
+                    case 'database_manager':
+                        include 'modules/knowledge_base/knowledge_base_template.php';
+                        break;
                 }
     ?>
             <?php endif; ?>

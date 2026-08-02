@@ -63,6 +63,17 @@ return [
     'add_rack'                => 'modules/nodes_page/api/AddData/add_rack.php',
     'get_node_racks'          => 'modules/nodes_page/api/GetData/get_node_racks.php',
 
+    // ----------------------------- БАЗА ЗНАНИЙ (управление таблицами БД) -----------------------------
+    'kb_get_tables'           => 'modules/knowledge_base/api/kb_get_tables.php',
+    'kb_get_columns'          => 'modules/knowledge_base/api/kb_get_columns.php',
+    'kb_get_rows'             => 'modules/knowledge_base/api/kb_get_rows.php',
+    'kb_add_column'           => 'modules/knowledge_base/api/kb_add_column.php',
+    'kb_update_column'        => 'modules/knowledge_base/api/kb_update_column.php',
+    'kb_delete_column'        => 'modules/knowledge_base/api/kb_delete_column.php',
+    'kb_add_row'              => 'modules/knowledge_base/api/kb_add_row.php',
+    'kb_update_row'           => 'modules/knowledge_base/api/kb_update_row.php',
+    'kb_delete_row'           => 'modules/knowledge_base/api/kb_delete_row.php',
+
     // ----------------------------- ПОЛЬЗОВАТЕЛИ -----------------------------
     'get_users'               => 'modules/users/api/GetData/get_users.php',
     'add_user'                => 'modules/users/api/AddData/add_user.php',
