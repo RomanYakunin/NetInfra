@@ -291,20 +291,55 @@ function closeAddForm(force = false) {
     }
 
     modal.classList.remove('visible');
+
+    // --- Полный сброс формы (см. modules/common/utils.js) ---
+    // Уничтожает поисковые селекты вместе с обёртками (иначе при повторном
+    // открытии они дублируются), снимает disabled и чистит ошибки валидации.
+    if (typeof resetModalForm === 'function') {
+        resetModalForm(modal);
+    }
+
+    // Поля формы строятся заново при каждом открытии — очищаем контейнеры,
+    // включая секцию шкафов с её чекбоксами.
+    const fieldsContainer = document.getElementById('addFormFields');
+    if (fieldsContainer) fieldsContainer.innerHTML = '';
+    const hiddenContainer = document.getElementById('addFormHiddenFields');
+    if (hiddenContainer) hiddenContainer.innerHTML = '';
+
+    // Модалка могла быть развёрнута кнопкой ⛶ — возвращаем обычную ширину
+    modal.querySelector('.modal-content')?.classList.remove('wide');
+
     window.AppState.currentLocationSelect = null;
+    window.AppState.currentNodeTypeSelect = null;
     window.AppState.currentStackInitialData = null;
+    window.AppState.currentStackGroupId = null;
+    window.AppState.currentExtraData = {};
+    window.AppState.currentInitialData = null;
     window.AppState.skipCloseConfirmation = false; // сбрасываем флаг
 }
 
 function initModalExpandButton(modal, type) {
-    const titleEl = document.getElementById('addFormTitle');
+    const modalContentEl = modal.querySelector('.modal-content');
+    if (!modalContentEl) return;
+
+    // Заголовок берём строго внутри этой модалки. Если по какой-то причине
+    // осталось несколько h3#addFormTitle (повторные открытия), оставляем первый,
+    // лишние удаляем — иначе заголовок дублируется.
+    const titles = modalContentEl.querySelectorAll('#addFormTitle');
+    for (let i = 1; i < titles.length; i++) titles[i].remove();
+    const titleEl = titles[0];
     if (!titleEl) return;
 
-    const existingRow = titleEl.parentElement;
-    if (existingRow && existingRow.classList.contains('modal-title-row')) {
-        existingRow.parentNode.insertBefore(titleEl, existingRow);
-        existingRow.remove();
-    }
+    // Разбираем предыдущую обвязку: выносим заголовок наружу и удаляем строку
+    // вместе со старой кнопкой (иначе накапливаются дубли #modalExpandBtn).
+    modalContentEl.querySelectorAll('.modal-title-row').forEach(row => {
+        if (row.contains(titleEl)) {
+            row.parentNode.insertBefore(titleEl, row);
+        }
+        row.remove();
+    });
+    // Кнопки, оставшиеся вне строки заголовка
+    modalContentEl.querySelectorAll('#modalExpandBtn, .modal-expand-btn').forEach(btn => btn.remove());
 
     const titleRow = document.createElement('div');
     titleRow.className = 'modal-title-row';

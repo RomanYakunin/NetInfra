@@ -4,8 +4,12 @@
         <input type="text" name="mac" placeholder="Поиск..." value="<?= htmlspecialchars($macSearch ?? '') ?>" style="flex: 1;" />
         <button type="submit" class="btn secondary">🔍</button>
     </form>
-    <select>
-        <option>10</option><option>25</option><option>50</option><option>100</option>
+    <!-- Количество записей на странице (обработчик в nodes_page.js) -->
+    <select id="nodesPerPage" title="Записей на странице">
+        <option value="10">10</option>
+        <option value="25">25</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
     </select>
     <button class="btn" onclick="openNodeAddForm()">Добавить узел</button>
     <button class="btn secondary" onclick="openAddColumnForm('nodes')">Добавить столбец</button>
@@ -90,80 +94,11 @@
     </div>
 </div>
 
-<div class="pagination">
+<!-- Пагинация: наполняется renderPagination() в nodes_page.js -->
+<div class="pagination" id="nodesPagination">
     <span class="page-info">Всего записей: <?= count($nodes) ?></span>
 </div>
 
 
-<script>
-// Функция фильтрации по зданию без перезагрузки
-async function filterByBuilding(buildingId) {
-    const tableBody = document.querySelector('#nodesTable tbody');
-    if (!tableBody) return;
-
-    // Обновляем активный класс в списке зданий
-    document.querySelectorAll('.building-item').forEach(item => {
-        item.classList.toggle('active', 
-            (buildingId == 0 && item.textContent.trim() === 'Все здания') || 
-            (item.onclick && item.onclick.toString().includes('filterByBuilding(' + buildingId + ')')));
-    });
-
-    try {
-        const url = buildingId ? `?ajax=get_nodes_list&building_id=${buildingId}` : '?ajax=get_nodes_list';
-        const response = await fetch(url);
-        const nodes = await response.json();
-
-        tableBody.innerHTML = '';
-
-        if (nodes.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:2rem;">Ничего не найдено</td></tr>';
-            return;
-        }
-
-        nodes.forEach(node => {
-            const nid = node.id_node;
-            const status = node.status || 'inactive';
-            const dotClass = status === 'active' ? 'active' : (status === 'partial' ? 'partial' : 'inactive');
-            const statusText = status === 'active' ? 'Активен' : (status === 'partial' ? 'Частично' : 'Не активен');
-            const kyDisplay = node.KY_number ? 'КУ-' + node.KY_number : '—';
-            const deviceCount = node.device_count || 0;
-
-            const tr = document.createElement('tr');
-            tr.className = 'data-row';
-            tr.setAttribute('data-node-id', nid);
-            tr.onclick = function() { toggleNodeEquipment(this, nid); };
-
-            tr.innerHTML = `
-                <td><span class="blink-dot ${dotClass}"></span> ${statusText}</td>
-                <td>${kyDisplay}</td>
-                <td>${node.location_display || ''}</td>
-                <td>${node.node_type_name || ''}</td>
-                <td><span class="equipment-count">${deviceCount} шт.</span></td>
-                <td class="expand-cell"><span class="expand-arrow">▶</span></td>
-            `;
-            tableBody.appendChild(tr);
-
-            const detailRow = document.createElement('tr');
-            detailRow.className = 'equipment-detail-row';
-            detailRow.id = 'equip-row-' + nid;
-            detailRow.innerHTML = `<td colspan="10"><div class="nested-container" id="equip-container-${nid}"></div></td>`;
-            tableBody.appendChild(detailRow);
-        });
-    } catch (err) {
-        console.error('Ошибка фильтрации:', err);
-    }
-}
-
-// Сворачивание/разворачивание панели зданий
-function toggleBuildingsSidebar() {
-    const sidebar = document.getElementById('buildingsSidebar');
-    const expandBtn = document.getElementById('expandBuildingsBtn');
-    if (sidebar.style.display === 'none') {
-        sidebar.style.display = 'block';
-        expandBtn.style.display = 'none';
-    } else {
-        sidebar.style.display = 'none';
-        expandBtn.style.display = 'block';
-    }
-}
-</script>
+<!-- Пагинация, фильтр по зданию и поиск: modules/nodes_page/nodes_page_pagination.js -->
+<script src="modules/nodes_page/nodes_page_pagination.js"></script>

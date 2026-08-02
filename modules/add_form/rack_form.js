@@ -8,18 +8,20 @@ function setRackFieldsEnabled(enabled) {
     const form = document.getElementById('addRackForm');
     if (!form) return;
     RACK_DEPENDENT_FIELDS.forEach(fieldName => {
-        const el = form.querySelector(`[name="${fieldName}"]`);
-        if (!el) return;
-        el.disabled = !enabled;
-        // Поисковый селект рисует собственный input поверх исходного
-        const wrapper = el.closest('.searchable-select');
-        if (wrapper) {
-            const searchInput = wrapper.querySelector('.searchable-select-input');
-            if (searchInput) searchInput.disabled = !enabled;
-            wrapper.style.opacity = enabled ? '' : '0.5';
-        } else {
-            el.style.opacity = enabled ? '' : '0.5';
-        }
+        // Берём ВСЕ совпадения: после пересоздания селекта в форме может
+        // остаться несколько элементов с одним именем
+        form.querySelectorAll(`[name="${fieldName}"]`).forEach(el => {
+            el.disabled = !enabled;
+            // Поисковый селект рисует собственный input поверх исходного
+            const wrapper = el.closest('.searchable-select');
+            if (wrapper) {
+                const searchInput = wrapper.querySelector('.searchable-select-input');
+                if (searchInput) searchInput.disabled = !enabled;
+                wrapper.style.opacity = enabled ? '' : '0.5';
+            } else {
+                el.style.opacity = enabled ? '' : '0.5';
+            }
+        });
     });
     const submitBtn = form.querySelector('button[type="submit"]');
     if (submitBtn) submitBtn.disabled = !enabled;
@@ -96,9 +98,15 @@ window.openAddRackForm = async function() {
         setRackFieldsEnabled(false);
     };
 
-    // Скрытое поле id_node
-    document.getElementById('rack-node-id').value = window.AppState.currentRelatedId
-        || window.AppState.currentExtraData?.node_id || '';
+    // Скрытое поле id_node.
+    // При РЕДАКТИРОВАНИИ узла currentRelatedId не заполнен — идентификатор
+    // лежит в currentInitialData.id_node, поэтому проверяем и его тоже.
+    const nodeIdForRack = window.AppState.currentRelatedId
+        || window.AppState.currentExtraData?.node_id
+        || window.AppState.currentInitialData?.id_node
+        || window.AppState.currentInitialData?.id
+        || '';
+    document.getElementById('rack-node-id').value = nodeIdForRack;
 
     // До выбора модели остальные поля заблокированы
     setRackFieldsEnabled(false);
@@ -106,53 +114,21 @@ window.openAddRackForm = async function() {
     showModal(modal);
 };
 
+/**
+ * Закрывает ТОЛЬКО модалку шкафа. Форму узла (universalAddModal) не трогаем —
+ * она должна остаться открытой на заднем плане.
+ * Escape обрабатывается централизованно в modules/add_form/esc_handler.js.
+ */
 function closeAddRackForm() {
-    const modal = document.getElementById('addRackModal');
-    if (modal) modal.classList.remove('visible');
-    const form = document.getElementById('addRackForm');
-    if (form) {
-        // Снимаем блокировку, иначе form.reset() не очистит disabled-поля корректно
-        form.querySelectorAll('input, select, textarea, button').forEach(el => { el.disabled = false; });
-        form.reset();
-        // Удаляем ошибки валидации и подсказку о выборе модели
-        form.querySelectorAll('.unique-error-msg, .form-error, .rack-model-hint').forEach(el => el.remove());
-        form.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
-        // Возвращаем прозрачность, выставленную при блокировке
-        form.querySelectorAll('.searchable-select').forEach(w => { w.style.opacity = ''; });
-        form.querySelectorAll('[style*="opacity"]').forEach(el => { el.style.opacity = ''; });
-        // Скрытое поле узла
-        const nodeIdInput = form.querySelector('#rack-node-id');
-        if (nodeIdInput) nodeIdInput.value = '';
+    // resetModalForm уничтожает поисковые селекты вместе с обёртками,
+    // снимает disabled и чистит ошибки — иначе при повторном открытии
+    // селекты дублируются, а поля остаются заблокированными.
+    if (typeof closeModalAndReset === 'function') {
+        closeModalAndReset('addRackModal');
+    } else {
+        document.getElementById('addRackModal')?.classList.remove('visible');
     }
-    // Полностью сбрасываем поисковые селекты (значение + видимый input + выпадающий список)
-    ['rack-vendor-select', 'rack-model-select', 'rack-building-select'].forEach(id => {
-        const select = document.getElementById(id);
-        if (!select) return;
-        select.value = '';
-        if (select.searchableInstance) {
-            select.searchableInstance.syncInputWithSelect();
-            const wrapper = select.closest('.searchable-select');
-            const dropdown = wrapper?.querySelector('.searchable-select-dropdown');
-            if (dropdown) dropdown.style.display = 'none';
-        }
-    });
 }
-
-// Закрытие по Escape (модалка шкафа приоритетнее формы узла)
-document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Escape') return;
-    const modelModal = document.getElementById('addRackModelModal');
-    if (modelModal?.classList.contains('visible')) {
-        e.stopPropagation();
-        closeAddRackModelForm();
-        return;
-    }
-    const rackModal = document.getElementById('addRackModal');
-    if (rackModal?.classList.contains('visible')) {
-        e.stopPropagation();
-        closeAddRackForm();
-    }
-}, true);
 
 async function updateRackModelSelect(vendorId = null) {
     const modelSelect = document.getElementById('rack-model-select');
@@ -307,9 +283,13 @@ window.openAddRackModelForm = function() {
     showModal(modal);
 };
 
+/** Закрывает форму новой модели, не трогая форму шкафа под ней. */
 function closeAddRackModelForm() {
-    const modal = document.getElementById('addRackModelModal');
-    if (modal) modal.classList.remove('visible');
+    if (typeof closeModalAndReset === 'function') {
+        closeModalAndReset('addRackModelModal');
+    } else {
+        document.getElementById('addRackModelModal')?.classList.remove('visible');
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {

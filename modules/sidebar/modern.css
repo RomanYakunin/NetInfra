@@ -1,0 +1,206 @@
+/* ============================================================
+   modules/sidebar/modern.css — «Современный стиль»
+   ------------------------------------------------------------
+   Включается классом .modern-theme на <html> (кнопка 🎨 в sidebar).
+   Работает поверх существующих тем light/dark/neutral: здесь только
+   переопределения переменных и точечная полировка, базовые стили
+   не дублируются. Чтобы отключить фичу — удалить этот файл, кнопку
+   в sidebar_template.php и обработчик в sidebar.js.
+   ============================================================ */
+
+/* ---------- Переменные: более мягкая палитра и крупные радиусы ---------- */
+.modern-theme {
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+
+    --shadow-soft: 0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.06);
+    --shadow-lift: 0 2px 4px rgba(0,0,0,0.06), 0 12px 28px rgba(0,0,0,0.12);
+}
+
+/* Светлые темы: белые карточки на светло-сером фоне */
+.modern-theme[data-theme="light"],
+.modern-theme[data-theme="neutral"] {
+    --bg: #f4f6fb;
+    --bg-card: #ffffff;
+    --bg-header: #ffffff;
+    --bg-sidebar: #ffffff;
+    --border-color: #e6e9f0;
+    --accent: #4f7cff;
+    --text-primary: #1a2233;
+    --text-secondary: #6b7688;
+    --table-hover: #f2f5ff;
+}
+
+/* Тёмная тема: приглушённый сине-серый вместо чёрного */
+.modern-theme[data-theme="dark"] {
+    --bg: #12151c;
+    --bg-card: #1a1f2b;
+    --bg-header: #1a1f2b;
+    --bg-sidebar: #161a24;
+    --border-color: #2a3040;
+    --accent: #6b93ff;
+    --text-primary: #e8ecf4;
+    --text-secondary: #97a1b5;
+    --table-hover: #222839;
+}
+
+/* ---------- Сглаживание шрифтов ---------- */
+.modern-theme body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: 0.01em;
+}
+
+/* ---------- Карточки, панели, таблицы ---------- */
+.modern-theme .table-wrapper,
+.modern-theme .kb-table-wrapper,
+.modern-theme .kb-sidebar,
+.modern-theme .dossier-section,
+.modern-theme .stat-block {
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-soft);
+    border-color: var(--border-color);
+}
+
+/* Компактные строки + плавный hover */
+.modern-theme table tbody td,
+.modern-theme .users-table tbody td,
+.modern-theme .kb-data-table tbody td {
+    padding-top: 0.38rem;
+    padding-bottom: 0.38rem;
+    transition: background 0.15s ease;
+}
+.modern-theme table tbody tr,
+.modern-theme .kb-data-table tbody tr {
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+.modern-theme tr.data-row:hover {
+    background: var(--table-hover);
+    box-shadow: inset 3px 0 0 var(--accent);   /* полоса-индикатор слева */
+}
+
+.modern-theme thead th {
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+}
+
+/* ---------- Кнопки ---------- */
+.modern-theme .btn {
+    border-radius: var(--radius-sm);
+    transition: transform 0.12s ease, box-shadow 0.15s ease, filter 0.15s ease;
+    box-shadow: var(--shadow-soft);
+}
+.modern-theme .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lift);
+    filter: brightness(1.06);
+}
+.modern-theme .btn:active { transform: translateY(0); }
+
+/* ---------- Поля ввода ---------- */
+.modern-theme input[type="text"],
+.modern-theme input[type="password"],
+.modern-theme input[type="number"],
+.modern-theme input[type="date"],
+.modern-theme select,
+.modern-theme textarea,
+.modern-theme .searchable-select-input {
+    border-radius: var(--radius-sm);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.modern-theme input:focus,
+.modern-theme select:focus,
+.modern-theme textarea:focus,
+.modern-theme .searchable-select-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+/* ---------- Модальные окна ---------- */
+.modern-theme .add-form-modal {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    background: rgba(10, 14, 22, 0.45);
+}
+.modern-theme .add-form-modal .modal-content {
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lift);
+    animation: modernModalIn 0.18s ease-out;
+}
+@keyframes modernModalIn {
+    from { opacity: 0; transform: translateY(-8px) scale(0.985); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ---------- Sidebar ---------- */
+.modern-theme .sidebar { border-right: 1px solid var(--border-color); }
+.modern-theme .nav-item {
+    border-radius: var(--radius-sm);
+    margin: 0.1rem 0.5rem;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.12s ease;
+}
+.modern-theme .nav-item:hover {
+    background: var(--table-hover);
+    transform: translateX(2px);
+}
+.modern-theme .nav-item.active {
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    color: var(--accent);
+    font-weight: 600;
+    box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* ---------- Header ---------- */
+.modern-theme .header {
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: var(--shadow-soft);
+}
+.modern-theme .header h1 {
+    font-weight: 650;
+    letter-spacing: -0.01em;
+}
+
+/* ---------- Панель стойки ---------- */
+.modern-theme .right-panel {
+    border-top-left-radius: var(--radius-lg);
+    border-bottom-left-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lift);
+}
+.modern-theme .rack-device { border-radius: var(--radius-sm); }
+
+/* ---------- Toast: анимация выхода ---------- */
+.modern-theme .toast {
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lift);
+}
+
+/* ---------- Кнопка переключения стиля ---------- */
+.modern-theme-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: calc(100% - 1rem);
+    margin: 0.4rem 0.5rem;
+    padding: 0.45rem 0.7rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+.modern-theme-btn:hover { border-color: var(--accent); background: var(--table-hover); }
+.modern-theme-btn.active {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    color: var(--accent);
+    font-weight: 600;
+}
+.modern-theme-icon { font-size: 1rem; line-height: 1; }
+/* В свёрнутом сайдбаре прячем подпись */
+.sidebar.collapsed .modern-theme-label { display: none; }

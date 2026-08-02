@@ -12,11 +12,16 @@ function addBuildingModal() {
 }
 
 function closeBuildingForm() {
-    const modal = document.getElementById('addBuildingModal');
-    if (modal) {
-        const form = modal.querySelector('#addBuildingForm');
-        if (form) form.reset();
-        modal.classList.remove('visible');
+    // Полный сброс: уничтожает поисковые селекты вместе с обёртками,
+    // снимает disabled и чистит ошибки валидации (см. modules/common/utils.js)
+    if (typeof closeModalAndReset === 'function') {
+        closeModalAndReset('addBuildingModal');
+    } else {
+        const modal = document.getElementById('addBuildingModal');
+        if (modal) {
+            modal.querySelector('#addBuildingForm')?.reset();
+            modal.classList.remove('visible');
+        }
     }
 }
 

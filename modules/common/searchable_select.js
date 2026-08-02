@@ -2,6 +2,18 @@ class SearchableSelect {
     static instances = [];
 
     constructor(select) {
+        // Защита от дублирования: если на этом select уже висит экземпляр,
+        // уничтожаем его вместе с обёрткой, иначе получим два поисковых поля.
+        if (select.searchableInstance) {
+            select.searchableInstance.destroy();
+        }
+        // Подстраховка: осиротевшая обёртка без живого экземпляра
+        const orphanWrapper = select.closest('.searchable-select');
+        if (orphanWrapper && orphanWrapper.parentNode) {
+            orphanWrapper.parentNode.insertBefore(select, orphanWrapper);
+            orphanWrapper.remove();
+        }
+
         this.select = select;
         this.options = Array.from(select.options).filter(opt => opt.value !== '__add_new__');
         this.addOption = select.querySelector('option[value="__add_new__"]');
@@ -196,11 +208,60 @@ class SearchableSelect {
         }
     }
 
+    /** Сбрасывает выбранное значение и очищает поле поиска. */
+    reset() {
+        this.select.value = '';
+        this.syncInputWithSelect();
+        this.dropdown.style.display = 'none';
+    }
+
+    /**
+     * Полностью убирает поисковый селект: возвращает исходный <select>
+     * на его место в DOM и удаляет обёртку. Без этого повторное открытие
+     * формы создаёт вторую обёртку поверх первой.
+     */
     destroy() {
         document.removeEventListener('click', this._closeHandler);
         SearchableSelect.instances = SearchableSelect.instances.filter(inst => inst !== this);
+
+        // Возвращаем select обратно в DOM и удаляем обёртку
+        if (this.wrapper && this.wrapper.parentNode) {
+            this.wrapper.parentNode.insertBefore(this.select, this.wrapper);
+            this.wrapper.remove();
+        }
+        this.select.style.display = '';
+        this.select.disabled = false;
+
         if (this.select.searchableInstance === this) {
             delete this.select.searchableInstance;
         }
+    }
+
+    /**
+     * Уничтожает все поисковые селекты внутри контейнера (формы/модалки).
+     * Вызывается из close-функций форм.
+     */
+    static destroyIn(container) {
+        if (!container) return;
+        container.querySelectorAll('select').forEach(sel => {
+            if (sel.searchableInstance) sel.searchableInstance.destroy();
+        });
+        // Подчищаем обёртки, оставшиеся без экземпляра
+        container.querySelectorAll('.searchable-select').forEach(wrapper => {
+            const sel = wrapper.querySelector('select');
+            if (sel && wrapper.parentNode) {
+                wrapper.parentNode.insertBefore(sel, wrapper);
+                sel.style.display = '';
+            }
+            wrapper.remove();
+        });
+    }
+
+    /** Сбрасывает значения всех поисковых селектов внутри контейнера. */
+    static resetIn(container) {
+        if (!container) return;
+        container.querySelectorAll('select').forEach(sel => {
+            if (sel.searchableInstance) sel.searchableInstance.reset();
+        });
     }
 }

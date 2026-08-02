@@ -59,8 +59,16 @@
             case 'addNodeTypeModal':      if (typeof closeNodeTypeForm === 'function') closeNodeTypeForm(); break;
             case 'moduleAddModal':        if (typeof closeModuleDialog === 'function') closeModuleDialog(); break;
             case 'serviceInstructionModal': if (typeof closeServiceInstruction === 'function') closeServiceInstruction(); break;
+            case 'addRackModal':          if (typeof closeAddRackForm === 'function') closeAddRackForm(); break;
+            case 'addRackModelModal':     if (typeof closeAddRackModelForm === 'function') closeAddRackModelForm(); break;
+            case 'lldpImportModal':       if (typeof closeLLDPImport === 'function') closeLLDPImport(); break;
+            case 'userFormModal':         if (typeof closeUserForm === 'function') closeUserForm(); break;
+            case 'kbRowModal':            if (typeof kbCloseRowModal === 'function') kbCloseRowModal(); break;
+            case 'kbColumnModal':         if (typeof kbCloseColumnModal === 'function') kbCloseColumnModal(); break;
+            case 'equipmentDetailsModal': if (typeof closeEquipmentDetails === 'function') closeEquipmentDetails(); break;
         }
 
+        // Гасим событие, чтобы Escape закрыл ровно одну (верхнюю) модалку
         e.stopPropagation();
     });
 })();

@@ -27,7 +27,11 @@ async function openLocationForm() {
     showModal(modal);
     new SearchableSelect(select);
 }
-function closeLocationForm() { const m = document.getElementById('addLocationModal'); if (m) m.classList.remove('visible'); }
+function closeLocationForm() {
+    // Полный сброс: уничтожает поисковые селекты вместе с обёртками
+    if (typeof closeModalAndReset === 'function') closeModalAndReset('addLocationModal');
+    else document.getElementById('addLocationModal')?.classList.remove('visible');
+}
 
 function openNodeTypeForm() {
     const modal = document.getElementById('addNodeTypeModal');
@@ -40,7 +44,10 @@ function openNodeTypeForm() {
     if (submitBtn) submitBtn.disabled = false;
     showModal(modal);
 }
-function closeNodeTypeForm() { const m = document.getElementById('addNodeTypeModal'); if (m) m.classList.remove('visible'); }
+function closeNodeTypeForm() {
+    if (typeof closeModalAndReset === 'function') closeModalAndReset('addNodeTypeModal');
+    else document.getElementById('addNodeTypeModal')?.classList.remove('visible');
+}
 
 function openMetaForm(listName, displayName) {
     if (listName === 'device_models') {
@@ -65,7 +72,11 @@ function openMetaForm(listName, displayName) {
 }
 function closeMetaForm() {
     const m = document.getElementById('metaAddModal');
-    if (m) { m.classList.remove('visible'); m.style.display = 'none'; }
+    if (!m) return;
+    m.classList.remove('visible');
+    m.style.display = 'none';
+    // Полный сброс: поисковые селекты, disabled, ошибки валидации
+    if (typeof resetModalForm === 'function') resetModalForm(m);
 }
 function showMetaError(msg) {
     const form = document.getElementById('metaAddForm');
@@ -156,7 +167,10 @@ function openModelMetaForm(displayName) {
 }
 function closeModelMetaForm() {
     const modal = document.getElementById('metaAddModel');
-    if (modal) { modal.classList.remove('visible'); modal.style.display = 'none'; }
+    if (!modal) return;
+    modal.classList.remove('visible');
+    modal.style.display = 'none';
+    if (typeof resetModalForm === 'function') resetModalForm(modal);
 }
 async function loadVendorsForModelSelect(select) {
     if (select.searchableInstance) { select.searchableInstance.destroy(); select.searchableInstance = null; }
@@ -206,8 +220,8 @@ function openModuleDialog(type) {
 }
 
 function closeModuleDialog() {
-    const modal = document.getElementById('moduleAddModal');
-    if (modal) modal.classList.remove('visible');
+    if (typeof closeModalAndReset === 'function') closeModalAndReset('moduleAddModal');
+    else document.getElementById('moduleAddModal')?.classList.remove('visible');
 }
 
 // Обработчики для форм (здания, локации, типы узлов, модели, модули)

@@ -259,10 +259,12 @@ async function openAddWarehouseForm() {
 
 function closeWarehouseModal() {
     const modal = document.getElementById('warehouseModal');
-    if (modal) modal.classList.remove('visible');
-    document.getElementById('warehouseForm')?.reset();
-    const select = document.getElementById('warehouseBuildingSelect');
-    if (select) resetSelectForSearchable(select);
+    if (modal) {
+        modal.classList.remove('visible');
+        // Уничтожает поисковые селекты вместе с обёртками — иначе при
+        // повторном открытии формы они дублируются
+        if (typeof resetModalForm === 'function') resetModalForm(modal);
+    }
     window.warehouseBuildingSearchable = null;
     editingWarehouseId = null;
     const title = modal?.querySelector('h3');
@@ -387,15 +389,12 @@ async function openWarehouseEquipmentForm() {
 
 function closeWarehouseEquipmentForm() {
     const modal = document.getElementById('warehouseEquipmentModal');
-    if (modal) modal.classList.remove('visible');
-    const form = document.getElementById('warehouseEquipmentForm');
-    if (form) {
-        form.reset();
-        // Удаляем ошибки валидации
-        form.querySelectorAll('.unique-error-msg').forEach(el => el.remove());
-        form.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
+    if (modal) {
+        modal.classList.remove('visible');
+        // Полный сброс: поисковые селекты + disabled + ошибки валидации
+        if (typeof resetModalForm === 'function') resetModalForm(modal);
     }
-    // Очищаем контейнеры
+    // Поля формы строятся заново при каждом открытии
     const fields = document.getElementById('warehouseFormFields');
     const hidden = document.getElementById('warehouseFormHiddenFields');
     if (fields) fields.innerHTML = '';

@@ -1,15 +1,20 @@
+<?php
+// Заголовок страницы по значению ?page=. Держим карту в одном месте,
+// чтобы новые страницы не приходилось дописывать в цепочку тернарников.
+$pageTitles = [
+    'nodes'            => '🖧 Коммутационные узлы',
+    'warehouse'        => '📦 Склады',
+    'checklist'        => '✅ Чек-лист',
+    'dashboard'        => '📊 Дашборд',
+    'database_manager' => '🗄️ База знаний',
+    'users'            => '👥 Пользователи',
+    'phones'           => '📞 Телефоны',
+];
+$pageTitle = $pageTitles[$page ?? ''] ?? 'NetInfra Manager';
+?>
 <header class="header">
     <div class="header-left">
-         <h1>
-       
-            <?= 
-            $page === 'nodes' ? 'Коммутационные узлы' : 
-            ($page === 'phones' ? '📞 Телефоны' : 
-            ($page === 'checklist' ? 'Чек-лист' :  
-            ($page === 'warehouse' ? '📦 Склады' :
-            ($page === 'dashboard' ? '📊 Дашборд' :
-            ($page === 'dashboard' ? '📊 Дашборд' :  '')))) ) ?>
-        </h1>
+        <h1><?= htmlspecialchars($pageTitle) ?></h1>
     </div>
     <div class="header-right">
         

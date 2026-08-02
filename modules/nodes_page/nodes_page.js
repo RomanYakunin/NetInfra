@@ -1154,76 +1154,11 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 async function searchNodes(query) {
-    const tableBody = document.querySelector('#nodesTable tbody');
-    if (!tableBody) return;
-
-    try {
-        const response = await fetch('?ajax=get_nodes_list&search=' + encodeURIComponent(query));
-        const result = await response.json();
-        const nodes = result.nodes || result;
-        const warehouseMatch = result.warehouse_match;
-
-        tableBody.innerHTML = '';
-
-        if (nodes.length === 0) {
-            if (warehouseMatch) {
-                const display = warehouseMatch.hostname || warehouseMatch.serial_number || warehouseMatch.mac_address;
-                const msg = `Устройство (${display}) находится на складе «${warehouseMatch.warehouse}»`;
-                tableBody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:2rem;">${msg}</td></tr>`;
-            } else {
-                tableBody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:2rem;">Ничего не найдено</td></tr>';
-            }
-            return;
-        }
-
-        nodes.forEach(node => {
-            const nid = node.id_node;
-            const status = node.status || 'inactive';
-            const dotClass = status === 'active' ? 'active' : (status === 'partial' ? 'partial' : 'inactive');
-            const statusText = status === 'active' ? 'Активен' : (status === 'partial' ? 'Частично' : 'Не активен');
-            const kyDisplay = node.KY_number ? 'КУ-' + node.KY_number : '—';
-            const deviceCount = node.device_count || 0;
-
-            const tr = document.createElement('tr');
-            tr.className = 'data-row';
-            tr.setAttribute('data-node-id', nid);
-            tr.setAttribute('data-status', status);
-            tr.setAttribute('data-ky', node.KY_number || '');
-            tr.setAttribute('data-location', node.location_display || '');
-            tr.setAttribute('data-nodetype', node.node_type_name || '');
-            tr.setAttribute('data-devicecount', deviceCount);
-            tr.addEventListener('click', function(e) {
-                if (e.ctrlKey || e.metaKey) return;
-                toggleNodeEquipment(this, nid);
-            });
-            tr.oncontextmenu = function(e) {
-                showNodeContextMenu(e, nid, node.KY_number || '');
-            };
-
-            tr.innerHTML = `
-                <td><span class="blink-dot ${dotClass}"></span> ${statusText}</td>
-                <td>${kyDisplay}</td>
-                <td>${node.location_display || ''}</td>
-                <td>${node.node_type_name || ''}</td>
-                <td><span class="equipment-count">${deviceCount} шт.</span></td>
-                <td class="expand-cell"><span class="expand-arrow">▶</span></td>
-            `;
-            tableBody.appendChild(tr);
-
-            const detailRow = document.createElement('tr');
-            detailRow.className = 'equipment-detail-row';
-            detailRow.id = 'equip-row-' + nid;
-            detailRow.innerHTML = `<td colspan="10"><div class="nested-container" id="equip-container-${nid}"></div></td>`;
-            tableBody.appendChild(detailRow);
-        });
-
-        if (warehouseMatch) {
-            const display = warehouseMatch.hostname || warehouseMatch.serial_number || warehouseMatch.mac_address;
-            const msg = `Устройство (${display}) находится на складе «${warehouseMatch.warehouse}»`;
-            showToast(msg, 'info');
-        }
-    } catch (err) {
-        console.error('Ошибка поиска:', err);
+    // Поиск делегируем в loadNodesTable: он сам применит текущие
+    // per_page/страницу и отрисует пагинацию (nodes_page_pagination.js)
+    if (typeof loadNodesTable === 'function') {
+        window.nodesTableState.search = (query || '').trim();
+        await loadNodesTable(1);
     }
 }
 
@@ -1232,9 +1167,8 @@ async function filterByBuilding(buildingId) {
     currentBuildingFilter = buildingId;
     const activeItem = document.querySelector('.building-item.active');
     currentBuildingName = activeItem ? activeItem.textContent.trim() : '';
-    const tableBody = document.querySelector('#nodesTable tbody');
-    if (!tableBody) return;
 
+    // Подсветка активного здания в левой панели
     document.querySelectorAll('.building-item').forEach(item => {
         if (buildingId == 0) {
             item.classList.toggle('active', item.textContent.trim() === 'Все здания');
@@ -1244,60 +1178,10 @@ async function filterByBuilding(buildingId) {
         }
     });
 
-    try {
-        const url = buildingId ? `?ajax=get_nodes_list&building_id=${buildingId}` : '?ajax=get_nodes_list';
-        const response = await fetch(url);
-        const nodes = await response.json();
-
-        tableBody.innerHTML = '';
-
-        if (nodes.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:2rem;">Ничего не найдено</td></tr>';
-            return;
-        }
-
-        nodes.forEach(node => {
-            const nid = node.id_node;
-            const status = node.status || 'inactive';
-            const dotClass = status === 'active' ? 'active' : (status === 'partial' ? 'partial' : 'inactive');
-            const statusText = status === 'active' ? 'Активен' : (status === 'partial' ? 'Частично' : 'Не активен');
-            const kyDisplay = node.KY_number ? 'КУ-' + node.KY_number : '—';
-            const deviceCount = node.device_count || 0;
-
-            const tr = document.createElement('tr');
-            tr.className = 'data-row';
-            tr.setAttribute('data-node-id', nid);
-            tr.setAttribute('data-status', status);
-            tr.setAttribute('data-ky', node.KY_number || '');
-            tr.setAttribute('data-location', node.location_display || '');
-            tr.setAttribute('data-nodetype', node.node_type_name || '');
-            tr.setAttribute('data-devicecount', deviceCount);
-            tr.onclick = function(e) {
-                if (e.ctrlKey || e.metaKey) return;
-                toggleNodeEquipment(this, nid);
-            };
-            tr.oncontextmenu = function(e) {
-                showNodeContextMenu(e, nid, node.KY_number || '');
-            };
-
-            tr.innerHTML = `
-                <td><span class="blink-dot ${dotClass}"></span> ${statusText}</td>
-                <td>${kyDisplay}</td>
-                <td>${node.location_display || ''}</td>
-                <td>${node.node_type_name || ''}</td>
-                <td><span class="equipment-count">${deviceCount} шт.</span></td>
-                <td class="expand-cell"><span class="expand-arrow">▶</span></td>
-            `;
-            tableBody.appendChild(tr);
-
-            const detailRow = document.createElement('tr');
-            detailRow.className = 'equipment-detail-row';
-            detailRow.id = 'equip-row-' + nid;
-            detailRow.innerHTML = `<td colspan="10"><div class="nested-container" id="equip-container-${nid}"></div></td>`;
-            tableBody.appendChild(detailRow);
-        });
-    } catch (err) {
-        console.error('Ошибка фильтрации:', err);
+    // Загрузка с сохранением выбранного «записей на странице»
+    if (typeof loadNodesTable === 'function') {
+        window.nodesTableState.buildingId = buildingId || 0;
+        await loadNodesTable(1);
     }
 }
 

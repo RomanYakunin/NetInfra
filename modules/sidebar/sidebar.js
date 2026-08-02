@@ -76,3 +76,38 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+/* ============================================================
+   БЛОК «СОВРЕМЕННЫЙ СТИЛЬ» (кнопка 🎨 в sidebar)
+   Удаляется вместе с modules/sidebar/modern.css и разметкой
+   #modernThemeBtn в sidebar_template.php.
+   ============================================================ */
+(function () {
+    'use strict';
+
+    const STORAGE_KEY = 'netinfra-modern-theme';
+
+    /** Включает/выключает класс .modern-theme на <html> и запоминает выбор. */
+    function applyModernTheme(enabled) {
+        document.documentElement.classList.toggle('modern-theme', enabled);
+        localStorage.setItem(STORAGE_KEY, enabled ? '1' : '0');
+        const btn = document.getElementById('modernThemeBtn');
+        if (btn) {
+            btn.classList.toggle('active', enabled);
+            btn.title = enabled ? 'Вернуть стандартный стиль' : 'Переключить современный стиль';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Восстанавливаем сохранённый выбор
+        const saved = localStorage.getItem(STORAGE_KEY) === '1';
+        applyModernTheme(saved);
+
+        document.getElementById('modernThemeBtn')?.addEventListener('click', () => {
+            const nowEnabled = !document.documentElement.classList.contains('modern-theme');
+            applyModernTheme(nowEnabled);
+            if (typeof showToast === 'function') {
+                showToast(nowEnabled ? 'Современный стиль включён' : 'Стандартный стиль', 'info');
+            }
+        });
+    });
+})();

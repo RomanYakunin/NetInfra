@@ -157,55 +157,14 @@ async function buildNodeForm(container, config, initialData, extraData, building
         if (field.name === 'room') {
             inLocationBlock = false;
             locationBlock = null;
-
-            // --- Блок "Шкаф(-ы)" (после расположения) ---
-            const racksSection = document.createElement('div');
-            racksSection.className = 'dossier-section';
-            racksSection.innerHTML = `
-                <h4 onclick="toggleSection(this)">
-                    <span class="section-arrow">▶</span> 🗄️ Шкаф(-ы)
-                </h4>
-            `;
-            const racksBody = document.createElement('div');
-            racksBody.className = 'section-body';
-            racksBody.style.display = 'none';
-
-            const racksTileGroup = document.createElement('div');
-            racksTileGroup.className = 'rack-tile-group';
-            racksTileGroup.id = 'racks-tile-group';
-
-            // Плитка «+ Добавить шкаф»
-            const addRackLabel = document.createElement('label');
-            addRackLabel.className = 'rack-tile-label rack-tile-add';
-            addRackLabel.id = 'add-rack-tile';
-            addRackLabel.innerHTML = `
-                <div class="rack-tile-content">
-                    <div class="rack-tile-name">+</div>
-                    <div class="rack-tile-detail">Добавить шкаф</div>
-                </div>
-            `;
-
-            addRackLabel.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (typeof openAddRackForm === 'function') {
-                    openAddRackForm();
-                } else {
-                    console.error('Функция openAddRackForm не определена');
-                }
-            });
-
-            racksTileGroup.appendChild(addRackLabel);
-            racksBody.appendChild(racksTileGroup);
-            racksSection.appendChild(racksBody);
-            container.appendChild(racksSection);
-
-            // Загружаем шкафы, если узел уже существует (редактирование)
-            if (initialData && initialData.id_node) {
-                loadNodeRacks(initialData.id_node);
-            }
         }
     }
+
+    // --- Блок "Шкаф(-ы)" ---
+    // Строится ПОСЛЕ цикла по полям, а не внутри него: раньше он создавался
+    // только вместе с полем room, поэтому при редактировании (и вообще при
+    // любом наборе полей без room) секция не появлялась вовсе.
+    buildRacksSection(container, initialData);
 
     // ================= ЗАПОЛНЕНИЕ ДАННЫХ ПРИ РЕДАКТИРОВАНИИ =================
     if (initialData) {
@@ -229,5 +188,70 @@ async function buildNodeForm(container, config, initialData, extraData, building
                 field.value = initialData[key] !== undefined ? initialData[key] : '';
             }
         }
+    }
+}
+/**
+ * Строит сворачиваемый блок «Шкаф(-ы)» в форме узла.
+ *
+ * Вызывается один раз после построения всех полей — и при добавлении нового
+ * узла, и при редактировании существующего. Для существующего узла сразу
+ * подгружает привязанные шкафы (плитки отмечаются чекбоксами).
+ *
+ * @param {HTMLElement} container   Контейнер полей формы
+ * @param {Object|null} initialData Данные узла при редактировании
+ */
+function buildRacksSection(container, initialData) {
+    if (!container) return;
+
+    // Защита от повторного построения при пересоздании формы
+    container.querySelectorAll('#racks-tile-group').forEach(el => {
+        el.closest('.dossier-section')?.remove();
+    });
+
+    const racksSection = document.createElement('div');
+    racksSection.className = 'dossier-section';
+    racksSection.innerHTML = `
+        <h4 onclick="toggleSection(this)">
+            <span class="section-arrow">▶</span> 🗄️ Шкаф(-ы)
+        </h4>
+    `;
+
+    const racksBody = document.createElement('div');
+    racksBody.className = 'section-body';
+    racksBody.style.display = 'none';
+
+    const racksTileGroup = document.createElement('div');
+    racksTileGroup.className = 'rack-tile-group';
+    racksTileGroup.id = 'racks-tile-group';
+
+    // Плитка «+ Добавить шкаф»
+    const addRackLabel = document.createElement('label');
+    addRackLabel.className = 'rack-tile-label rack-tile-add';
+    addRackLabel.id = 'add-rack-tile';
+    addRackLabel.innerHTML = `
+        <div class="rack-tile-content">
+            <div class="rack-tile-name">+</div>
+            <div class="rack-tile-detail">Добавить шкаф</div>
+        </div>
+    `;
+    addRackLabel.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof openAddRackForm === 'function') {
+            openAddRackForm();
+        } else {
+            console.error('Функция openAddRackForm не определена');
+        }
+    });
+
+    racksTileGroup.appendChild(addRackLabel);
+    racksBody.appendChild(racksTileGroup);
+    racksSection.appendChild(racksBody);
+    container.appendChild(racksSection);
+
+    // Для существующего узла подтягиваем уже привязанные шкафы
+    const nodeId = initialData && (initialData.id_node || initialData.id);
+    if (nodeId && typeof loadNodeRacks === 'function') {
+        loadNodeRacks(nodeId);
     }
 }

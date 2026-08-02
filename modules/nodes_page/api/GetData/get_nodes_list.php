@@ -9,6 +9,14 @@ ini_set('display_errors', 0);
 $buildingId = isset($_GET['building_id']) ? (int)$_GET['building_id'] : 0;
 $search     = trim($_GET['search'] ?? '');
 
+// ---------- Пагинация ----------
+// per_page = 0 (или «all») — вернуть всё без LIMIT (обратная совместимость)
+$page    = max(1, (int)($_GET['page'] ?? 1));
+$perPage = isset($_GET['per_page']) ? (int)$_GET['per_page'] : 0;
+if (!in_array($perPage, [0, 10, 25, 50, 100, 200], true)) {
+    $perPage = 10;
+}
+
 try {
     // ================== Основной запрос узлов ==================
     $sql = "SELECT n.id_node,
@@ -100,6 +108,24 @@ try {
 
     $sql .= " GROUP BY n.id_node ORDER BY n.KY_number ASC";
 
+    // ---------- Общее количество узлов (до применения LIMIT) ----------
+    // GROUP BY уже схлопнул дубли от JOIN'ов, поэтому считаем строки подзапроса.
+    $countSql = "SELECT COUNT(*) FROM ($sql) AS cnt";
+    $stmtCount = $pdo->prepare($countSql);
+    $stmtCount->execute($params);
+    $total = (int)$stmtCount->fetchColumn();
+
+    // ---------- Применяем LIMIT/OFFSET ----------
+    $totalPages = ($perPage > 0) ? max(1, (int)ceil($total / $perPage)) : 1;
+    if ($page > $totalPages) $page = $totalPages;
+
+    if ($perPage > 0) {
+        $offset = ($page - 1) * $perPage;
+        // LIMIT/OFFSET подставляем как целые: плейсхолдеры здесь работают
+        // не во всех режимах эмуляции PDO
+        $sql .= " LIMIT " . (int)$perPage . " OFFSET " . (int)$offset;
+    }
+
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     $nodes = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -143,15 +169,28 @@ unset($node);
         }
     }
 
-    // Формируем ответ
-    if (!empty($search)) {
-        // При поиске возвращаем объект с nodes и warehouse_match
-        echo json_encode([
+    // ---------- Формируем ответ ----------
+    // Если запрошена пагинация (per_page > 0) — всегда возвращаем объект
+    // с метаданными. Без per_page поведение прежнее (обратная совместимость):
+    // массив узлов, либо объект с warehouse_match при поиске.
+    $meta = [
+        'total'       => $total,
+        'page'        => $page,
+        'per_page'    => $perPage,
+        'total_pages' => $totalPages,
+    ];
+
+    if ($perPage > 0) {
+        echo json_encode(array_merge([
             'nodes' => $nodes,
-            'warehouse_match' => $warehouseMatch
-        ]);
+            'warehouse_match' => $warehouseMatch,
+        ], $meta));
+    } elseif (!empty($search)) {
+        echo json_encode(array_merge([
+            'nodes' => $nodes,
+            'warehouse_match' => $warehouseMatch,
+        ], $meta));
     } else {
-        // Без поиска возвращаем просто массив узлов (обратная совместимость)
         echo json_encode($nodes);
     }
 } catch (PDOException $e) {

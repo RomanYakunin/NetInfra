@@ -78,6 +78,18 @@
             </div>
             <button onclick="location.href='?logout=1'">Выйти</button>
         </div>
+        <!-- ============================================================
+             БЛОК «СОВРЕМЕННЫЙ СТИЛЬ» — можно удалить целиком вместе с
+             modules/sidebar/modern.css и обработчиком #modernThemeBtn
+             в sidebar.js, остальной интерфейс это не затронет.
+             ============================================================ -->
+        <button type="button" class="modern-theme-btn" id="modernThemeBtn"
+                title="Переключить современный стиль">
+            <span class="modern-theme-icon">🎨</span>
+            <span class="modern-theme-label">Современный стиль</span>
+        </button>
+        <!-- ==================== /БЛОК «СОВРЕМЕННЫЙ СТИЛЬ» ==================== -->
+
         <div class="theme-switch">
             <div class="theme-option active" data-theme="dark">🌙</div>
             <div class="theme-option" data-theme="light">☀️</div>

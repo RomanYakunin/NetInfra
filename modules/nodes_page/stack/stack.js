@@ -178,12 +178,19 @@ if (typeof setupEquipmentValidation === 'function') {
 
 window.closeStackDeviceForm = function() {
     const modal = document.getElementById('addStackDeviceModal');
-    if (modal) modal.classList.remove('visible');
-    const form = document.getElementById('addStackDeviceForm');
-    if (form) form.reset();
+    if (modal) {
+        modal.classList.remove('visible');
+        // Полный сброс: поисковые селекты уничтожаются вместе с обёртками,
+        // иначе при повторном открытии формы они дублируются
+        if (typeof resetModalForm === 'function') resetModalForm(modal);
+    }
+    // Поля стека строятся заново при каждом открытии
     const fields = document.getElementById('stackDeviceFormFields');
     if (fields) fields.innerHTML = '';
+    const hidden = document.getElementById('stackDeviceFormHiddenFields');
+    if (hidden) hidden.innerHTML = '';
 
+    // Возвращаем на передний план форму узла — она остаётся открытой
     const mainModal = document.getElementById('universalAddModal');
     if (mainModal && !mainModal.classList.contains('visible')) {
         showModal(mainModal);

@@ -203,3 +203,59 @@ function enableEditMode(service, vendorId) {
         } catch(e) { alert('Ошибка сети'); }
     };
 }
+/**
+ * Единый сброс модальной формы (см. modules/common/searchable_select.js).
+ *
+ * Вызывается из всех close-функций, чтобы форма при повторном открытии
+ * была в исходном состоянии:
+ *  - уничтожаются поисковые селекты вместе с обёртками (иначе дублируются);
+ *  - снимается disabled/readonly, выставленный логикой формы;
+ *  - очищаются сообщения об ошибках валидации;
+ *  - form.reset() возвращает поля к значениям по умолчанию.
+ *
+ * @param {HTMLElement} modal   Модалка (или сама форма)
+ * @param {Object}      options { keepValues: не делать form.reset() }
+ */
+function resetModalForm(modal, options = {}) {
+    if (!modal) return;
+    const form = modal.tagName === 'FORM' ? modal : modal.querySelector('form');
+    const scope = form || modal;
+
+    // 1. Поисковые селекты — уничтожаем вместе с обёртками
+    if (typeof SearchableSelect !== 'undefined') {
+        SearchableSelect.destroyIn(scope);
+    }
+
+    // 2. Снимаем блокировки, выставленные логикой формы
+    scope.querySelectorAll('input, select, textarea, button').forEach(el => {
+        el.disabled = false;
+        if (el.readOnly) el.readOnly = false;
+        el.style.opacity = '';
+    });
+    scope.querySelectorAll('.searchable-select').forEach(w => { w.style.opacity = ''; });
+
+    // 3. Ошибки валидации и служебные подсказки
+    scope.querySelectorAll('.unique-error-msg, .form-error, .ky-error, .rack-model-hint, .mac-duplicate-msg')
+        .forEach(el => el.remove());
+    scope.querySelectorAll('.input-error, .ky-invalid')
+        .forEach(el => el.classList.remove('input-error', 'ky-invalid'));
+
+    // 4. Значения полей
+    if (form && !options.keepValues) {
+        form.reset();
+        // form.reset() не трогает динамически проставленные value у hidden-полей
+        form.querySelectorAll('input[type="hidden"]').forEach(el => { el.value = ''; });
+    }
+}
+
+/**
+ * Закрывает модалку: снимает класс visible и полностью сбрасывает форму.
+ * Родительские модалки не трогает — дочерняя форма закрывается сама по себе.
+ */
+function closeModalAndReset(modalId, options = {}) {
+    const modal = typeof modalId === 'string' ? document.getElementById(modalId) : modalId;
+    if (!modal) return;
+    modal.classList.remove('visible');
+    modal.style.display = '';
+    resetModalForm(modal, options);
+}

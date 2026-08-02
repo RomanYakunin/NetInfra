@@ -549,6 +549,10 @@ switch ($page) {
         var theme = localStorage.getItem('netinfra-theme');
         if (!theme) theme = 'dark';   // по умолчанию тёмная
         document.documentElement.setAttribute('data-theme', theme);
+        // «Современный стиль» применяем до отрисовки, чтобы не мигало
+        if (localStorage.getItem('netinfra-modern-theme') === '1') {
+            document.documentElement.classList.add('modern-theme');
+        }
     })();
 </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -556,6 +560,8 @@ switch ($page) {
     <link rel="stylesheet" href="assets/css/styles.css">
     <link rel="stylesheet" href="modules/header/header.css">
     <link rel="stylesheet" href="modules/sidebar/sidebar.css">
+    <!-- Блок «Современный стиль» (можно удалить вместе с кнопкой в sidebar) -->
+    <link rel="stylesheet" href="modules/sidebar/modern.css">
     <link rel="stylesheet" href="modules/nodes_page/nodes_page.css">
     <link rel="stylesheet" href="modules/nodes_page/stack/stack.css">
     <link rel="stylesheet" href="modules/nodes_page/equipment_details/equipment_details.css">
