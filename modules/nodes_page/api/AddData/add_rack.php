@@ -18,6 +18,7 @@ if ($name === '') {
 }
 
 $modelId    = !empty($_POST['model_id']) ? (int)$_POST['model_id'] : null;
+$nodeId     = !empty($_POST['id_node']) ? (int)$_POST['id_node'] : null;
 $buildingId = !empty($_POST['building_id']) ? (int)$_POST['building_id'] : null;
 $workshop   = trim($_POST['workshop'] ?? '');
 $floor      = trim($_POST['floor'] ?? '');
@@ -42,11 +43,31 @@ try {
         }
     }
 
-    $stmt = $pdo->prepare("INSERT INTO racks (name, model_id, location_id, status, notes) VALUES (?, ?, ?, ?, ?)");
-    $stmt->execute([$name, $modelId, $locationId, $status, $notes]);
+    // id_node — узел, из формы которого добавляется шкаф
+    $stmt = $pdo->prepare("INSERT INTO racks (name, model_id, location_id, id_node, status, notes) VALUES (?, ?, ?, ?, ?, ?)");
+    $stmt->execute([$name, $modelId, $locationId, $nodeId, $status, $notes]);
     $newId = $pdo->lastInsertId();
 
-    echo json_encode(['success' => true, 'id' => $newId, 'name' => $name]);
+    // Возвращаем краткие характеристики модели — для подписи на плитке
+    $detail = '';
+    if ($modelId) {
+        $stmtModel = $pdo->prepare("
+            SELECT rm.model_name, rm.height_u, rm.width_mm, rm.depth_mm, v.name AS vendor_name
+            FROM rack_models rm
+            LEFT JOIN vendors v ON rm.vendor_id = v.id_vendor
+            WHERE rm.id = ?
+        ");
+        $stmtModel->execute([$modelId]);
+        if ($m = $stmtModel->fetch(PDO::FETCH_ASSOC)) {
+            $parts = [];
+            if (!empty($m['vendor_name'])) $parts[] = $m['vendor_name'];
+            if (!empty($m['height_u']))    $parts[] = $m['height_u'] . 'U';
+            if (!empty($m['width_mm']) && !empty($m['depth_mm'])) $parts[] = $m['width_mm'] . '×' . $m['depth_mm'] . ' мм';
+            $detail = implode(', ', $parts);
+        }
+    }
+
+    echo json_encode(['success' => true, 'id' => $newId, 'name' => $name, 'detail' => $detail]);
 } catch (PDOException $e) {
     echo json_encode(['success' => false, 'error' => 'Ошибка БД: ' . $e->getMessage()]);
 }

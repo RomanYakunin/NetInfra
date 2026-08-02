@@ -39,6 +39,20 @@ function setRackFieldsEnabled(enabled) {
     }
 }
 
+// Копируем цех / этаж / комнату из формы узла в форму шкафа.
+// Здание обрабатывается отдельно (селект заполняется асинхронно).
+function prefillRackLocationFromNode() {
+    const nodeForm = document.getElementById('universalAddForm');
+    const rackForm = document.getElementById('addRackForm');
+    if (!nodeForm || !rackForm) return;
+
+    ['workshop', 'floor', 'room'].forEach(fieldName => {
+        const src = nodeForm.querySelector(`[name="${fieldName}"]`);
+        const dst = rackForm.querySelector(`[name="${fieldName}"]`);
+        if (src && dst) dst.value = src.value || '';
+    });
+}
+
 window.openAddRackForm = async function() {
     const modal = document.getElementById('addRackModal');
     if (!modal) return;
@@ -70,7 +84,11 @@ window.openAddRackForm = async function() {
         const nodeBuilding = document.querySelector('#universalAddForm select[name="building_id"]')?.value;
         if (nodeBuilding) buildingSelect.value = nodeBuilding;
         new SearchableSelect(buildingSelect);
+        if (buildingSelect.searchableInstance) buildingSelect.searchableInstance.syncInputWithSelect();
     } catch (e) { buildingSelect.innerHTML = '<option value="">-- ошибка --</option>'; }
+
+    // ---------- Остальные поля локации подтягиваем из формы узла ----------
+    prefillRackLocationFromNode();
 
     // Обработчик смены производителя (список моделей сбрасывается — снова блокируем поля)
     vendorSelect.onchange = async () => {
@@ -93,20 +111,48 @@ function closeAddRackForm() {
     if (modal) modal.classList.remove('visible');
     const form = document.getElementById('addRackForm');
     if (form) {
+        // Снимаем блокировку, иначе form.reset() не очистит disabled-поля корректно
+        form.querySelectorAll('input, select, textarea, button').forEach(el => { el.disabled = false; });
         form.reset();
-        // Удаляем ошибки валидации, если есть
-        form.querySelectorAll('.unique-error-msg, .form-error').forEach(el => el.remove());
+        // Удаляем ошибки валидации и подсказку о выборе модели
+        form.querySelectorAll('.unique-error-msg, .form-error, .rack-model-hint').forEach(el => el.remove());
         form.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
+        // Возвращаем прозрачность, выставленную при блокировке
+        form.querySelectorAll('.searchable-select').forEach(w => { w.style.opacity = ''; });
+        form.querySelectorAll('[style*="opacity"]').forEach(el => { el.style.opacity = ''; });
+        // Скрытое поле узла
+        const nodeIdInput = form.querySelector('#rack-node-id');
+        if (nodeIdInput) nodeIdInput.value = '';
     }
-    // Очищаем поисковые селекты (обнуляем видимые инпуты)
+    // Полностью сбрасываем поисковые селекты (значение + видимый input + выпадающий список)
     ['rack-vendor-select', 'rack-model-select', 'rack-building-select'].forEach(id => {
         const select = document.getElementById(id);
-        if (select && select.searchableInstance) {
-            select.value = '';
+        if (!select) return;
+        select.value = '';
+        if (select.searchableInstance) {
             select.searchableInstance.syncInputWithSelect();
+            const wrapper = select.closest('.searchable-select');
+            const dropdown = wrapper?.querySelector('.searchable-select-dropdown');
+            if (dropdown) dropdown.style.display = 'none';
         }
     });
 }
+
+// Закрытие по Escape (модалка шкафа приоритетнее формы узла)
+document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const modelModal = document.getElementById('addRackModelModal');
+    if (modelModal?.classList.contains('visible')) {
+        e.stopPropagation();
+        closeAddRackModelForm();
+        return;
+    }
+    const rackModal = document.getElementById('addRackModal');
+    if (rackModal?.classList.contains('visible')) {
+        e.stopPropagation();
+        closeAddRackForm();
+    }
+}, true);
 
 async function updateRackModelSelect(vendorId = null) {
     const modelSelect = document.getElementById('rack-model-select');
@@ -119,20 +165,27 @@ async function updateRackModelSelect(vendorId = null) {
         const models = data.data || [];
         modelSelect.innerHTML = '<option value="">-- не выбрано --</option>';
         models.forEach(m => {
-            // Формируем многострочный лейбл с основными хар-ками
-            const label = [
-                m.name,                         // model_name
-                `${m.height_u}U, ${m.width_mm}×${m.depth_mm} мм`,
-                `Дверь: ${m.door_type || '—'}`,
-                `IP${(m.ip_rating || '').replace(/^IP/i, '') || '—'}, до ${m.max_load_kg || '—'} кг`
-            ].join('\n');                       // переносы строк
+            // Формируем многострочный лейбл с полными характеристиками модели
+            const title = m.model_name || m.name || 'Без названия';
 
-            const option = new Option(label, m.id);
+            // Габариты: 42U, 600×800 мм
+            const dims = [];
+            if (m.height_u) dims.push(`${m.height_u}U`);
+            if (m.width_mm && m.depth_mm) dims.push(`${m.width_mm}×${m.depth_mm} мм`);
+            if (m.form_factor) dims.push(m.form_factor);
+
+            // Дополнительно: дверь, класс защиты, нагрузка
+            const extra = [];
+            if (m.door_type) extra.push(`дверь: ${m.door_type}`);
+            if (m.ip_rating) extra.push(m.ip_rating);
+            if (m.max_load_kg) extra.push(`до ${m.max_load_kg} кг`);
+
+            const lines = [title];
+            if (dims.length) lines.push(dims.join(', '));
+            if (extra.length) lines.push(extra.join(', '));
+
+            const option = new Option(lines.join('\n'), m.id);
             option.dataset.vendorId = m.vendor_id || '';
-            // Разрешаем переносы строк внутри option (стилизуем через CSS)
-            option.style.whiteSpace = 'pre';     // чтобы \n работали как переносы
-            option.style.lineHeight = '1.3';
-            option.style.padding = '0.5rem 0.8rem';
             modelSelect.add(option);
         });
         const addOpt = new Option('Добавить...', '__add_new__');
@@ -181,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.success) {
                     closeAddRackForm();
                     // Добавляем плитку шкафа в блок (сразу отмеченной)
-                    addRackTile(data.id, data.name, true);
+                    addRackTile(data.id, data.name, true, data.detail || 'шкаф');
                     showToast('Шкаф добавлен', 'success');
                 } else {
                     showToast(data.error || 'Ошибка', 'error');
@@ -222,7 +275,8 @@ async function loadNodeRacks(nodeId) {
                 if (r.vendor_name) detailParts.push(r.vendor_name);
                 if (r.height_u) detailParts.push(`${r.height_u}U`);
                 if (r.width_mm && r.depth_mm) detailParts.push(`${r.width_mm}×${r.depth_mm} мм`);
-                addRackTile(r.id, r.name, true, detailParts.join(', ') || 'шкаф');
+                // Шкафы узла отмечаем чекбоксами
+                addRackTile(r.id_rack, r.name, true, detailParts.join(', ') || 'шкаф');
             });
         }
     } catch (e) {}

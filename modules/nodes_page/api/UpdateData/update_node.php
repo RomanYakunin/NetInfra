@@ -43,22 +43,22 @@ try {
     $stmt = $pdo->prepare("UPDATE nodes SET KY_number = ?, node_type_id = ?, id_location = ? WHERE id_node = ?");
     $stmt->execute([$kyNumber, $nodeTypeId, $locationId, $id]);
 
-    // Синхронизируем привязку шкафов к локации узла: снимаем со старых, привязываем выбранные
-    if ($locationId) {
-        $rackIds = $_POST['rack_ids'] ?? [];
-        $rackIds = is_array($rackIds) ? array_values(array_filter(array_map('intval', $rackIds))) : [];
+    // Синхронизируем привязку шкафов к узлу: снимаем с невыбранных, привязываем выбранные
+    $rackIds = $_POST['rack_ids'] ?? [];
+    $rackIds = is_array($rackIds) ? array_values(array_filter(array_map('intval', $rackIds))) : [];
 
-        if (!empty($rackIds)) {
-            $placeholders = implode(',', array_fill(0, count($rackIds), '?'));
-            $stmt = $pdo->prepare("UPDATE racks SET location_id = NULL WHERE location_id = ? AND id_rack NOT IN ($placeholders)");
-            $stmt->execute(array_merge([$locationId], $rackIds));
+    if (!empty($rackIds)) {
+        $placeholders = implode(',', array_fill(0, count($rackIds), '?'));
+        // Отвязываем те шкафы узла, которые больше не отмечены
+        $stmt = $pdo->prepare("UPDATE racks SET id_node = NULL WHERE id_node = ? AND id_rack NOT IN ($placeholders)");
+        $stmt->execute(array_merge([$id], $rackIds));
 
-            $placeholders = implode(',', array_fill(0, count($rackIds), '?'));
-            $stmt = $pdo->prepare("UPDATE racks SET location_id = ? WHERE id_rack IN ($placeholders)");
-            $stmt->execute(array_merge([$locationId], $rackIds));
-        } else {
-            $pdo->prepare("UPDATE racks SET location_id = NULL WHERE location_id = ?")->execute([$locationId]);
-        }
+        // Привязываем отмеченные (и подтягиваем локацию узла, если она задана)
+        $stmt = $pdo->prepare("UPDATE racks SET id_node = ?, location_id = COALESCE(?, location_id) WHERE id_rack IN ($placeholders)");
+        $stmt->execute(array_merge([$id, $locationId], $rackIds));
+    } else {
+        // Ни один шкаф не отмечен — отвязываем все шкафы этого узла
+        $pdo->prepare("UPDATE racks SET id_node = NULL WHERE id_node = ?")->execute([$id]);
     }
 
     echo json_encode(['success' => true, 'id_node' => $id]);

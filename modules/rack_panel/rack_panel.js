@@ -1,329 +1,390 @@
 // modules/rack_panel/rack_panel.js
+// Выдвижная панель визуализации шкафов узла.
+// Открывается из контекстного меню оборудования («Отобразить стойку»)
+// или кнопкой-ручкой у правого края экрана.
 
-let panelOpen = false;
-let currentRackEquipId = null;
-let dragData = null;
-let currentRackData = null;
+(function () {
+    'use strict';
 
-const deviceTypeColors = {
-    'Коммутатор': '#42a5f5',
-    'Маршрутизатор': '#ab47bc',
-    'Сервер': '#66bb6a',
-    'Дисковая полка': '#ffa726',
-    'ИБП': '#ef5350',
-    'Инженерное оборудование': '#ec407a',
-    'МСЭ': '#26a69a',
-    'IP-Телефон': '#78909c',
-    'Принтер': '#8d6e63'
-};
+    // ---------- Состояние панели ----------
+    let rackPanelOpen = false;       // открыта ли панель
+    let rackData = null;             // последний ответ get_rack
+    let activeRackId = null;         // выбранная вкладка (шкаф)
+    let highlightEquipId = null;     // оборудование, ради которого открывали панель
+    let lastEquipId = null;          // для повторного открытия по кнопке-ручке
 
-if (typeof showToast !== 'function') {
-    window.showToast = function(msg, type) { alert(msg); };
-}
+    // Цвета блоков по типу устройства
+    const DEVICE_COLORS = {
+        'Коммутатор':               { bg: 'rgba(66,165,245,0.18)',  border: '#42a5f5' },
+        'Маршрутизатор':            { bg: 'rgba(102,187,106,0.18)', border: '#66bb6a' },
+        'Сервер':                   { bg: 'rgba(171,71,188,0.18)',  border: '#ab47bc' },
+        'Дисковая полка':           { bg: 'rgba(255,167,38,0.18)',  border: '#ffa726' },
+        'ИБП':                      { bg: 'rgba(239,83,80,0.18)',   border: '#ef5350' },
+        'Инженерное оборудование':  { bg: 'rgba(236,64,122,0.18)',  border: '#ec407a' },
+        'МСЭ(Межсетевой экран)':    { bg: 'rgba(38,166,154,0.18)',  border: '#26a69a' },
+        'IP-Телефон':               { bg: 'rgba(120,144,156,0.18)', border: '#78909c' },
+        'Принтер':                  { bg: 'rgba(141,110,99,0.18)',  border: '#8d6e63' }
+    };
+    const DEFAULT_COLOR = { bg: 'rgba(150,150,150,0.15)', border: '#9e9e9e' };
 
-function toggleRackPanel(open) {
-    const panel = document.getElementById('rightPanel');
-    const tab = document.getElementById('panelTab');
-    if (!panel || !tab) return;
-
-    panelOpen = open;
-    if (open) {
-        panel.classList.add('open');
-        panel.style.transform = 'translateX(0)';
-        panel.style.visibility = 'visible';
-        tab.classList.add('hidden');
-    } else {
-        panel.classList.remove('open');
-        panel.style.transform = 'translateX(100%)';
-        panel.style.visibility = 'hidden';
-        tab.classList.remove('hidden');
+    function colorFor(typeName) {
+        return DEVICE_COLORS[typeName] || DEFAULT_COLOR;
     }
-}
 
-function openRackPanel(equipId) {
-    if (currentRackEquipId === equipId && panelOpen) {
-        toggleRackPanel(false);
-        currentRackEquipId = null;
-        return;
+    // Локальный экранировщик — на случай, если utils.js ещё не загружен
+    function esc(str) {
+        if (str === null || str === undefined) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
     }
-    currentRackEquipId = equipId;
-    loadRackContent(equipId);
-}
 
-async function loadRackContent(equipId) {
-    const panelBody = document.getElementById('panelBody');
-    if (!panelBody) return;
+    function toast(msg, type) {
+        if (typeof showToast === 'function') showToast(msg, type);
+    }
 
-    try {
-        const resp = await fetch(`?ajax=get_rack&equipment_id=${equipId}`);
-        const data = await resp.json();
+    // ---------- Открытие / закрытие ----------
+    function toggleRackPanel(open) {
+        const panel = document.getElementById('rightPanel');
+        const tab = document.getElementById('panelTab');
+        if (!panel) return;
 
-        if (data.error) {
-            panelBody.innerHTML = `<div style="padding:1rem; text-align:center; color:var(--danger);">${data.error}</div>`;
-            document.getElementById('panelTitle').textContent = 'Стойка';
-            showToast(data.error, 'warning');
-            if (panelOpen) toggleRackPanel(false);
+        rackPanelOpen = open;
+        panel.classList.toggle('open', open);
+        if (tab) tab.classList.toggle('hidden', open);
+    }
+
+    /**
+     * Открыть панель для оборудования. Повторный вызов для того же
+     * оборудования — закрывает панель (поведение переключателя).
+     */
+    async function openRackPanel(equipId) {
+        if (lastEquipId === equipId && rackPanelOpen) {
+            toggleRackPanel(false);
+            return;
+        }
+        lastEquipId = equipId;
+        highlightEquipId = equipId ? parseInt(equipId, 10) : null;
+        await loadRackData({ equipment_id: equipId });
+    }
+
+    /** Открыть панель для узла целиком (без выделения конкретного устройства). */
+    async function openRackPanelForNode(nodeId) {
+        lastEquipId = null;
+        highlightEquipId = null;
+        await loadRackData({ node_id: nodeId });
+    }
+
+    // ---------- Загрузка данных ----------
+    async function loadRackData(params) {
+        const panelBody = document.getElementById('panelBody');
+        const panelTitle = document.getElementById('panelTitle');
+        if (!panelBody) return;
+
+        panelBody.innerHTML = '<div class="rack-placeholder">Загрузка…</div>';
+        if (panelTitle) panelTitle.textContent = 'Стойка';
+        toggleRackPanel(true);
+
+        const qs = new URLSearchParams(params).toString();
+        try {
+            const resp = await fetch(`?ajax=get_rack&${qs}`);
+            const data = await resp.json();
+
+            if (data.error) {
+                panelBody.innerHTML = `<div class="rack-placeholder rack-error">${esc(data.error)}</div>`;
+                if (panelTitle) panelTitle.textContent = 'Стойка';
+                return;
+            }
+
+            rackData = data;
+            activeRackId = data.active_rack_id;
+            if (data.active_equipment_id) highlightEquipId = parseInt(data.active_equipment_id, 10);
+
+            renderPanel();
+        } catch (e) {
+            panelBody.innerHTML = '<div class="rack-placeholder rack-error">Ошибка загрузки данных шкафа</div>';
+        }
+    }
+
+    // ---------- Отрисовка ----------
+    function renderPanel() {
+        const panelBody = document.getElementById('panelBody');
+        const panelTitle = document.getElementById('panelTitle');
+        if (!panelBody || !rackData) return;
+
+        const racks = rackData.racks || [];
+        const rack = racks.find(r => r.id_rack === activeRackId) || racks[0];
+        if (!rack) {
+            panelBody.innerHTML = '<div class="rack-placeholder">У этого узла нет шкафов</div>';
             return;
         }
 
-        currentRackData = data;
-        const { cabinet_name, cabinet_height, units, cabinets } = data;
-        document.getElementById('panelTitle').textContent = `${cabinet_name || 'Стойка'} (${cabinet_height}U)`;
-
-        // Вкладки
-        let tabsHtml = '';
-        if (cabinets && cabinets.length > 1) {
-            tabsHtml = '<div class="cabinet-tabs">';
-            cabinets.forEach(c => {
-                const active = (c.rack_name === cabinet_name) ? ' active' : '';
-                tabsHtml += `<span class="cabinet-tab${active}" data-rack-id="${c.id_rack}">${c.rack_name}</span>`;
-            });
-            tabsHtml += '</div>';
+        if (panelTitle) {
+            panelTitle.textContent = `${rack.name || 'Шкаф'} · ${rack.height_u}U`;
         }
 
-        // Легенда
-        const typeSet = new Set();
-        units.forEach(u => { if (u.device_type_name) typeSet.add(u.device_type_name); });
-        const typesArray = Array.from(typeSet).sort();
-        let legendHtml = '<div class="legend">';
-        typesArray.forEach(type => {
-            const color = deviceTypeColors[type] || '#999';
-            legendHtml += `<div class="legend-item"><span class="legend-dot" style="background:${color};"></span> ${type}</div>`;
-        });
-        legendHtml += '<div class="legend-item"><span class="legend-dot empty"></span> Свободно</div></div>';
+        let html = '';
 
-        // Информация о стеке
-        const activeUnit = units.find(u => u.id == equipId);
-        let stackHtml = '';
-        if (activeUnit && activeUnit.group_id) {
-            const stackDevices = units.filter(u => u.group_id === activeUnit.group_id);
-            if (stackDevices.length > 0) {
-                stackHtml = `<div class="dossier-section" style="margin-top:1rem;">
-                    <h4>📦 Стек: ${escapeHtml(activeUnit.stack_hostname || 'Без имени')}</h4>
-                    <div class="dossier-grid">
-                        ${stackDevices.map(u => `
-                            <div class="dossier-item">
-                                <div class="label">${escapeHtml(u.hostname)} (юнит ${u.unit_position})</div>
-                                <div class="value">${escapeHtml(u.ip_address || '—')}</div>
-                            </div>`).join('')}
+        // --- Вкладки шкафов (если их несколько) ---
+        if (racks.length > 1) {
+            html += '<div class="rack-tabs">';
+            racks.forEach(r => {
+                const active = r.id_rack === rack.id_rack ? ' active' : '';
+                html += `
+                    <button type="button" class="rack-tab${active}" data-rack-id="${r.id_rack}">
+                        <span class="rack-tab-name">${esc(r.name || 'Шкаф')}</span>
+                        <span class="rack-tab-meta">${esc(r.location_display || '')}</span>
+                    </button>`;
+            });
+            html += '</div>';
+        }
+
+        // --- Шапка с характеристиками шкафа ---
+        const specs = [];
+        if (rack.vendor_name) specs.push(esc(rack.vendor_name));
+        if (rack.model_name) specs.push(esc(rack.model_name));
+        if (rack.width_mm && rack.depth_mm) specs.push(`${rack.width_mm}×${rack.depth_mm} мм`);
+        if (rack.form_factor) specs.push(esc(rack.form_factor));
+
+        html += `
+            <div class="rack-summary">
+                <div class="rack-summary-line">${specs.join(' · ') || 'Модель не указана'}</div>
+                ${rack.location_display ? `<div class="rack-summary-loc">📍 ${esc(rack.location_display)}</div>` : ''}
+            </div>`;
+
+        // --- Сама стойка ---
+        html += renderRack(rack);
+
+        // --- Легенда типов, встречающихся в этом шкафу ---
+        html += renderLegend(rack);
+
+        panelBody.innerHTML = html;
+
+        bindTabs();
+        bindDeviceEvents();
+        scrollToHighlighted();
+    }
+
+    /**
+     * Стойка: вертикальный список юнитов сверху вниз (от большего номера к 1),
+     * многоюнитовые устройства — одним блоком через grid-row.
+     */
+    function renderRack(rack) {
+        const height = rack.height_u || 42;
+        const equipment = rack.equipment || [];
+
+        // Карта: юнит → устройство, которое его занимает
+        const occupied = {};
+        equipment.forEach(eq => {
+            if (!eq.unit_start) return;
+            const size = eq.unit_size || 1;
+            for (let u = eq.unit_start; u < eq.unit_start + size; u++) {
+                occupied[u] = eq;
+            }
+        });
+
+        // Оборудование без позиции — покажем отдельным списком под стойкой
+        const unplaced = equipment.filter(eq => !eq.unit_start);
+
+        let html = '<div class="rack-frame">';
+        html += '<div class="rack-grid">';
+
+        // Рисуем сверху вниз: юнит height … юнит 1
+        for (let u = height; u >= 1; u--) {
+            const eq = occupied[u];
+
+            // Номер юнита — всегда
+            html += `<div class="rack-unit-no" style="grid-row: ${height - u + 1};">${u}</div>`;
+
+            if (!eq) {
+                html += `<div class="rack-slot empty" style="grid-row: ${height - u + 1};" data-unit="${u}"></div>`;
+                continue;
+            }
+
+            // Блок устройства рисуем только на его верхнем юните
+            const size = eq.unit_size || 1;
+            const topUnit = eq.unit_start + size - 1;
+            if (u !== topUnit) continue;
+
+            const rowStart = height - topUnit + 1;
+            const c = colorFor(eq.device_type_name);
+            const isHighlight = highlightEquipId && eq.id === highlightEquipId;
+            const isStack = !!eq.stack_id;
+
+            const meta = [];
+            if (eq.device_type_name) meta.push(esc(eq.device_type_name));
+            if (eq.model_name) meta.push(esc(eq.model_name));
+
+            const badges = [];
+            if (eq.Poe) badges.push('<span class="rack-badge poe" title="PoE">⚡PoE</span>');
+            badges.push(eq.status === 'active'
+                ? '<span class="rack-badge on" title="Активно">●</span>'
+                : '<span class="rack-badge off" title="Не активно">●</span>');
+            if (size > 1) badges.push(`<span class="rack-badge size">${size}U</span>`);
+
+            html += `
+                <div class="rack-device${isHighlight ? ' highlight' : ''}${isStack ? ' in-stack' : ''}"
+                     style="grid-row: ${rowStart} / span ${size}; background:${c.bg}; border-color:${c.border};"
+                     data-equip-id="${eq.id}"
+                     data-unit="${eq.unit_start}"
+                     title="${esc(eq.hostname || '')} — ${esc(eq.device_type_name || '')}">
+                    <div class="rack-device-main">
+                        <span class="rack-device-name">${esc(eq.hostname || 'Без имени')}</span>
+                        <span class="rack-device-badges">${badges.join('')}</span>
                     </div>
+                    <div class="rack-device-sub">
+                        ${eq.ip_address ? `<span class="rack-device-ip">${esc(eq.ip_address)}</span>` : ''}
+                        ${meta.length ? `<span class="rack-device-meta">${meta.join(' · ')}</span>` : ''}
+                    </div>
+                    ${isStack ? `<div class="rack-device-stack">📦 ${esc(eq.stack_name || 'стек')}</div>` : ''}
                 </div>`;
-            }
         }
 
-        panelBody.innerHTML = tabsHtml + legendHtml + '<div id="rackTableContainer"></div>' + stackHtml;
-        renderRackTable(units, cabinet_height);
+        html += '</div></div>';
 
-        // Переключение вкладок
-        document.querySelectorAll('.cabinet-tab').forEach(tabEl => {
-            tabEl.addEventListener('click', () => {
-                const rackId = tabEl.dataset.rackId;
-                const eqInRack = units.find(u => u.id_rack == rackId);
-                if (eqInRack) {
-                    currentRackEquipId = eqInRack.id;
-                    loadRackContent(eqInRack.id);
-                }
+        // Устройства этого шкафа без указанного юнита
+        if (unplaced.length) {
+            html += '<div class="rack-unplaced"><div class="rack-unplaced-title">Без указанного юнита</div>';
+            unplaced.forEach(eq => {
+                const c = colorFor(eq.device_type_name);
+                html += `
+                    <div class="rack-unplaced-item" data-equip-id="${eq.id}" style="border-left-color:${c.border};">
+                        <span class="rack-device-name">${esc(eq.hostname || 'Без имени')}</span>
+                        <span class="rack-device-meta">${esc(eq.device_type_name || '')}${eq.ip_address ? ' · ' + esc(eq.ip_address) : ''}</span>
+                    </div>`;
+            });
+            html += '</div>';
+        }
+
+        return html;
+    }
+
+    function renderLegend(rack) {
+        const types = [...new Set((rack.equipment || [])
+            .map(e => e.device_type_name)
+            .filter(Boolean))].sort();
+        if (!types.length) return '';
+
+        let html = '<div class="rack-legend">';
+        types.forEach(t => {
+            const c = colorFor(t);
+            html += `<span class="rack-legend-item"><i style="background:${c.bg}; border-color:${c.border};"></i>${esc(t)}</span>`;
+        });
+        html += '</div>';
+        return html;
+    }
+
+    // ---------- Обработчики ----------
+    function bindTabs() {
+        document.querySelectorAll('#panelBody .rack-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                activeRackId = parseInt(tab.dataset.rackId, 10);
+                renderPanel();
             });
         });
-
-        // Открываем панель только при успехе
-        toggleRackPanel(true);
-
-    } catch (e) {
-        panelBody.innerHTML = '<div style="padding:1rem; text-align:center; color:var(--danger);">Ошибка загрузки стойки</div>';
     }
-}
 
-function renderRackTable(units, cabinetHeight) {
-    const container = document.getElementById('rackTableContainer');
-    if (!container) return;
-
-    const unitMap = {};
-    units.forEach(u => {
-        const size = u.unit_size || 1;
-        for (let pos = u.unit_position; pos < u.unit_position + size; pos++) {
-            unitMap[pos] = { ...u, isStart: pos === u.unit_position, isEnd: pos === u.unit_position + size - 1 };
-        }
-    });
-
-    let html = '<table class="rack-table"><thead><tr><th>Юнит</th><th>Устройство</th><th>IP</th><th>Статус</th></tr></thead><tbody>';
-    for (let u = 1; u <= cabinetHeight; u++) {
-        const info = unitMap[u];
-        if (info) {
-            const typeColor = deviceTypeColors[info.device_type_name] || '#ddd';
-            const rowStyle = `background: ${typeColor}; color: #000;`;
-            html += `<tr class="rack-row" style="${rowStyle}" data-unit="${u}" data-equip-id="${info.id}" data-is-start="${info.isStart}" data-is-end="${info.isEnd}" data-unit-size="${info.unit_size || 1}" draggable="true">
-                <td>${u}</td>
-                <td>${info.hostname || '—'}</td>
-                <td>${info.ip_address || '—'}</td>
-                <td><span class="blink-dot ${info.status}"></span> ${info.status === 'active' ? 'Активен' : 'Не активен'}</td>
-            </tr>`;
-        } else {
-            html += `<tr class="rack-row empty" data-unit="${u}" data-equip-id="" data-drop-target="true">
-                <td>${u}</td><td>—</td><td>—</td><td>Свободен</td>
-            </tr>`;
-        }
-    }
-    html += '</tbody></table>';
-    container.innerHTML = html;
-
-    // Автоматически навешиваем обработчики после каждой перерисовки
-    setupRackDragDrop();
-    setupRackResize();
-    setupRackContextMenu();
-}
-
-function setupRackDragDrop() {
-    const rows = document.querySelectorAll('#rackTableContainer .rack-row');
-    rows.forEach(row => {
-        row.addEventListener('dragstart', e => {
-            if (!row.dataset.equipId) { e.preventDefault(); return; }
-            dragData = { equipId: parseInt(row.dataset.equipId), fromUnit: parseInt(row.dataset.unit) };
-            row.classList.add('dragover-drag');
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', row.dataset.equipId);
-        });
-        row.addEventListener('dragend', () => { row.classList.remove('dragover-drag'); dragData = null; });
-        row.addEventListener('dragover', e => { e.preventDefault(); row.classList.add('drop-target'); });
-        row.addEventListener('dragleave', () => row.classList.remove('drop-target'));
-        row.addEventListener('drop', async e => {
-            e.preventDefault();
-            row.classList.remove('drop-target');
-            if (!dragData) return;
-            const toUnit = parseInt(row.dataset.unit);
-            const toEquipId = row.dataset.equipId ? parseInt(row.dataset.equipId) : null;
-            if (dragData.equipId === toEquipId) return;
-            const formData = new FormData();
-            formData.append('equip1_id', dragData.equipId);
-            formData.append('equip2_id', toEquipId || 0);
-            formData.append('new_unit', toUnit);
-            try {
-                const resp = await fetch('?ajax=swap_rack_units', { method: 'POST', body: formData });
-                const result = await resp.json();
-                if (result.success) {
-                    showToast('Оборудование перемещено', 'success');
-                    if (currentRackEquipId) loadRackContent(currentRackEquipId);
-                } else {
-                    showToast('Ошибка перемещения: ' + (result.error || ''), 'error');
-                }
-            } catch (err) { showToast('Ошибка сети', 'error'); }
-        });
-    });
-}
-
-function setupRackResize() {
-    const rows = document.querySelectorAll('#rackTableContainer .rack-row[data-is-end="true"]');
-    rows.forEach(row => {
-        row.addEventListener('mousedown', e => {
-            const rect = row.getBoundingClientRect();
-            if (e.clientY < rect.bottom - 8 || e.clientY > rect.bottom + 4) return;
-            e.stopPropagation();
-            e.preventDefault();
-
-            const equipId = parseInt(row.dataset.equipId);
-            const startRow = document.querySelector(`.rack-row[data-equip-id="${equipId}"][data-is-start="true"]`);
-            if (!startRow || !currentRackData) return;
-
-            const unitEntry = currentRackData.units.find(u => u.id == equipId);
-            if (!unitEntry) return;
-
-            const originalSize = unitEntry.unit_size || 1;
-            let currentSize = originalSize;
-
-            const startY = e.clientY;
-            const rowHeight = row.offsetHeight || 30;
-
-            const onMouseMove = me => {
-                const dy = me.clientY - startY;
-                const deltaRows = Math.round(dy / rowHeight);
-                let newSize = originalSize + deltaRows;
-                if (newSize < 1) newSize = 1;
-                if (newSize > 20) newSize = 20;
-
-                if (newSize !== currentSize) {
-                    currentSize = newSize;
-                    unitEntry.unit_size = currentSize;
-                    renderRackTable(currentRackData.units, currentRackData.cabinet_height);
-                }
-            };
-
-            const onMouseUp = async () => {
-                document.removeEventListener('mousemove', onMouseMove);
-                document.removeEventListener('mouseup', onMouseUp);
-
-                if (currentSize !== originalSize) {
-                    try {
-                        const resp = await fetch('?ajax=update_rack_unit_size', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                            body: `equip_id=${equipId}&unit_size=${currentSize}`
-                        });
-                        const data = await resp.json();
-                        if (data.success) {
-                            showToast(`Размер изменён до ${currentSize} юнитов`, 'success');
-                            // Обновляем кэш для последующих ресайзов
-                            if (currentRackData) {
-                                const u = currentRackData.units.find(u => u.id == equipId);
-                                if (u) u.unit_size = currentSize;
-                            }
-                        } else {
-                            showToast(data.error || 'Ошибка', 'error');
-                            unitEntry.unit_size = originalSize;
-                            renderRackTable(currentRackData.units, currentRackData.cabinet_height);
-                        }
-                    } catch (e) {
-                        showToast('Ошибка сети', 'error');
-                        unitEntry.unit_size = originalSize;
-                        renderRackTable(currentRackData.units, currentRackData.cabinet_height);
-                    }
-                }
-            };
-
-            document.addEventListener('mousemove', onMouseMove);
-            document.addEventListener('mouseup', onMouseUp);
-        });
-    });
-}
-
-function setupRackContextMenu() {
-    const rows = document.querySelectorAll('#rackTableContainer .rack-row');
-    rows.forEach(row => {
-        row.addEventListener('contextmenu', e => {
-            e.preventDefault();
-            const equipId = row.dataset.equipId;
+    function bindDeviceEvents() {
+        const selector = '#panelBody .rack-device, #panelBody .rack-unplaced-item';
+        document.querySelectorAll(selector).forEach(el => {
+            const equipId = parseInt(el.dataset.equipId, 10);
             if (!equipId) return;
-            window.selectedEquipmentId = equipId;
-            window.selectedEquipmentData = {};
-            if (typeof showContextMenu === 'function') {
-                showContextMenu(e.clientX, e.clientY, [
-                    { text: 'Редактировать', action: 'edit', icon: 'assets/icons/edit.png' },
-                    { text: 'Переместить в другой юнит', action: 'move_unit', icon: 'assets/icons/move.png' },
-                    { text: 'Переместить на склад', action: 'move', icon: 'assets/icons/move.png' },
-                ]);
-            }
+
+            // Клик — подробная карточка оборудования
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (typeof showEquipmentDetails === 'function') {
+                    showEquipmentDetails(equipId);
+                } else {
+                    toast('Окно подробностей недоступно', 'warning');
+                }
+            });
+
+            // ПКМ — контекстное меню (редактировать / переместить / удалить)
+            el.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                showRackContextMenu(e, equipId);
+            });
+        });
+    }
+
+    /**
+     * Простое контекстное меню панели. Используем общий контейнер #ctxMenu,
+     * но вешаем собственные обработчики — состояние nodes_page.js не трогаем.
+     */
+    function showRackContextMenu(e, equipId) {
+        const menu = document.getElementById('ctxMenu');
+        if (!menu) return;
+
+        const items = [
+            { text: 'Подробнее', icon: 'assets/icons/detailed.png', run: () => {
+                if (typeof showEquipmentDetails === 'function') showEquipmentDetails(equipId);
+            }},
+            { text: 'Редактировать', icon: 'assets/icons/edit.png', run: () => {
+                if (typeof openEditEquipmentForm === 'function') openEditEquipmentForm(equipId);
+                else toast('Форма редактирования недоступна', 'warning');
+            }},
+            { text: 'Переместить', icon: 'assets/icons/move.png', run: () => {
+                if (typeof openMoveDialog === 'function') openMoveDialog(equipId, null);
+                else toast('Форма перемещения недоступна', 'warning');
+            }},
+            { text: 'Удалить', icon: 'assets/icons/delete.png', run: () => {
+                if (typeof deleteEquipment === 'function') deleteEquipment(equipId);
+                else toast('Удаление недоступно', 'warning');
+            }}
+        ];
+
+        const ul = document.createElement('ul');
+        items.forEach(item => {
+            const li = document.createElement('li');
+            li.innerHTML = `<img src="${item.icon}" width="16" height="16" alt=""> ${esc(item.text)}`;
+            li.addEventListener('click', () => {
+                menu.style.display = 'none';
+                item.run();
+            });
+            ul.appendChild(li);
+        });
+
+        menu.innerHTML = '';
+        menu.appendChild(ul);
+        menu.style.display = 'block';
+        menu.style.left = Math.min(e.clientX, window.innerWidth - 220) + 'px';
+        menu.style.top = Math.min(e.clientY, window.innerHeight - 200) + 'px';
+
+        const close = () => { menu.style.display = 'none'; document.removeEventListener('click', close); };
+        setTimeout(() => document.addEventListener('click', close), 0);
+    }
+
+    // Прокручиваем к устройству, ради которого открыли панель
+    function scrollToHighlighted() {
+        if (!highlightEquipId) return;
+        const el = document.querySelector(`#panelBody .rack-device[data-equip-id="${highlightEquipId}"]`);
+        if (el && typeof el.scrollIntoView === 'function') {
+            el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }
+    }
+
+    // ---------- Кнопки панели ----------
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('panelClose')?.addEventListener('click', () => toggleRackPanel(false));
+
+        document.getElementById('panelTab')?.addEventListener('click', () => {
+            if (rackData) toggleRackPanel(true);
+            else toast('Выберите оборудование и откройте «Отобразить стойку»', 'info');
         });
     });
-}
 
-document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && panelOpen) {
-        toggleRackPanel(false);
-        currentRackEquipId = null;
-    }
-});
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && rackPanelOpen) {
+            // Не закрываем панель, если поверх открыта модалка
+            if (document.querySelector('.add-form-modal.visible')) return;
+            toggleRackPanel(false);
+        }
+    });
 
-document.getElementById('panelTab')?.addEventListener('click', () => {
-    if (currentRackEquipId) toggleRackPanel(true);
-    else showToast('Сначала выберите оборудование через контекстное меню', 'info');
-});
-document.getElementById('panelClose')?.addEventListener('click', () => {
-    toggleRackPanel(false);
-    currentRackEquipId = null;
-});
-
-function escapeHtml(str) {
-    if (str === null || str === undefined) return '';
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-}
+    // ---------- Экспорт ----------
+    window.openRackPanel = openRackPanel;
+    window.openRackPanelForNode = openRackPanelForNode;
+    window.toggleRackPanel = toggleRackPanel;
+})();

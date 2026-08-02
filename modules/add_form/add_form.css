@@ -1370,5 +1370,33 @@ textarea {
 .searchable-select-option {
     white-space: normal;
     word-wrap: break-word;
+    overflow-wrap: anywhere;
     line-height: 1.4;
+}
+
+/* Ограничиваем ширину выпадающего списка, чтобы длинные подписи не растягивали его */
+.searchable-select-dropdown {
+    max-width: 450px;
+    box-sizing: border-box;
+}
+
+/* Многострочная опция: первая строка — название, остальные — характеристики */
+.searchable-select-option.multiline {
+    padding: 0.45rem 0.8rem;
+}
+.searchable-select-option.multiline .option-title {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.searchable-select-option.multiline .option-sub {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 0.1rem;
+}
+
+/* В поле поиска выбранное значение — всегда одной строкой */
+.searchable-select-input {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }

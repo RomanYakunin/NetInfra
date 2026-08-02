@@ -11,14 +11,16 @@ if (!$list) {
 // Каталог моделей шкафов: своя логика (доп. поля + опциональный фильтр по производителю)
 if ($list === 'rack_models') {
     $vendorId = (int)($_GET['vendor_id'] ?? 0);
-    $sql = "SELECT id, vendor_id, model_name AS name, form_factor, height_u, width_mm, depth_mm, door_type, ip_rating, max_load_kg
-            FROM rack_models";
+    // Возвращаем ВСЕ столбцы таблицы + имя производителя (name — алиас для совместимости с селектами)
+    $sql = "SELECT rm.*, rm.model_name AS name, v.name AS vendor_name
+            FROM rack_models rm
+            LEFT JOIN vendors v ON rm.vendor_id = v.id_vendor";
     $params = [];
     if ($vendorId) {
-        $sql .= " WHERE vendor_id = ?";
+        $sql .= " WHERE rm.vendor_id = ?";
         $params[] = $vendorId;
     }
-    $sql .= " ORDER BY name";
+    $sql .= " ORDER BY rm.model_name";
     try {
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);

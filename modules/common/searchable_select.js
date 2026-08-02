@@ -45,11 +45,16 @@ class SearchableSelect {
         SearchableSelect.instances.push(this);
     }
 
+    // Многострочный текст опции схлопываем в одну строку для поля поиска
+    static toSingleLine(text) {
+        return (text || '').replace(/\s*\n\s*/g, ' · ').trim();
+    }
+
     syncInputWithSelect() {
         if (this.select.value && this.select.value !== '__add_new__') {
             const selectedOption = this.select.options[this.select.selectedIndex];
             if (selectedOption && selectedOption.textContent) {
-                this.searchInput.value = selectedOption.textContent;
+                this.searchInput.value = SearchableSelect.toSingleLine(selectedOption.textContent);
             } else {
                 this.searchInput.value = '';
             }
@@ -69,13 +74,20 @@ class SearchableSelect {
                 .forEach(opt => {
                     const div = document.createElement('div');
                     div.className = 'searchable-select-option';
-                    div.textContent = opt.textContent;
-                    // --- ИЗМЕНЕНО: разрешаем переносы строк в выпадающем списке ---
-                    div.style.whiteSpace = 'normal';
-                    div.style.lineHeight = '1.4';
-                    div.style.wordWrap = 'break-word';
+                    // Многострочные опции: \n показываем как реальные переносы
+                    if (opt.textContent.includes('\n')) {
+                        div.classList.add('multiline');
+                        opt.textContent.split('\n').forEach((line, i) => {
+                            const lineEl = document.createElement('div');
+                            lineEl.className = i === 0 ? 'option-title' : 'option-sub';
+                            lineEl.textContent = line;
+                            div.appendChild(lineEl);
+                        });
+                    } else {
+                        div.textContent = opt.textContent;
+                    }
                     div.addEventListener('click', () => {
-                        this.searchInput.value = opt.textContent;
+                        this.searchInput.value = SearchableSelect.toSingleLine(opt.textContent);
                         this.select.value = opt.value;
                         this.dropdown.style.display = 'none';
                         this.select.dispatchEvent(new Event('change'));
@@ -106,13 +118,20 @@ class SearchableSelect {
             scored.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'searchable-select-option';
-                div.textContent = item.opt.textContent;
-                // --- ИЗМЕНЕНО: разрешаем переносы строк в выпадающем списке ---
-                div.style.whiteSpace = 'normal';
-                div.style.lineHeight = '1.4';
-                div.style.wordWrap = 'break-word';
+                // Многострочные опции: \n показываем как реальные переносы
+                if (item.opt.textContent.includes('\n')) {
+                    div.classList.add('multiline');
+                    item.opt.textContent.split('\n').forEach((line, i) => {
+                        const lineEl = document.createElement('div');
+                        lineEl.className = i === 0 ? 'option-title' : 'option-sub';
+                        lineEl.textContent = line;
+                        div.appendChild(lineEl);
+                    });
+                } else {
+                    div.textContent = item.opt.textContent;
+                }
                 div.addEventListener('click', () => {
-                    this.searchInput.value = item.opt.textContent;
+                    this.searchInput.value = SearchableSelect.toSingleLine(item.opt.textContent);
                     this.select.value = item.opt.value;
                     this.dropdown.style.display = 'none';
                     this.select.dispatchEvent(new Event('change'));

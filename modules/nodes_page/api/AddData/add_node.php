@@ -44,15 +44,13 @@ try {
     $stmt->execute([$kyNumber, $locationId, $nodeTypeId]);
     $newId = $pdo->lastInsertId();
 
-    // Привязываем выбранные шкафы к локации узла
+    // Привязываем выбранные шкафы к узлу (и к его локации)
     $rackIds = $_POST['rack_ids'] ?? [];
-    if ($locationId && !empty($rackIds) && is_array($rackIds)) {
-        $rackIds = array_values(array_filter(array_map('intval', $rackIds)));
-        if (!empty($rackIds)) {
-            $placeholders = implode(',', array_fill(0, count($rackIds), '?'));
-            $stmt = $pdo->prepare("UPDATE racks SET location_id = ? WHERE id_rack IN ($placeholders)");
-            $stmt->execute(array_merge([$locationId], $rackIds));
-        }
+    $rackIds = is_array($rackIds) ? array_values(array_filter(array_map('intval', $rackIds))) : [];
+    if (!empty($rackIds)) {
+        $placeholders = implode(',', array_fill(0, count($rackIds), '?'));
+        $stmt = $pdo->prepare("UPDATE racks SET id_node = ?, location_id = COALESCE(?, location_id) WHERE id_rack IN ($placeholders)");
+        $stmt->execute(array_merge([$newId, $locationId], $rackIds));
     }
 
     echo json_encode(['success' => true, 'id' => $newId, 'message' => 'Узел успешно добавлен']);

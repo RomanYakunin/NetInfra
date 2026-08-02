@@ -931,17 +931,7 @@ case 'database_manager':
     </div>
 </div>
 <!-- Выдвижная панель стойки -->
-<div class="right-panel" id="rightPanel">
-    <div class="panel-header">
-        <span id="panelTitle">Стойка</span>
-        <span class="panel-close" id="panelClose">✕</span>
-    </div>
-    <div class="panel-body" id="panelBody">
-        <div style="padding:1rem; text-align:center; color:var(--text-secondary);">Выберите оборудование для просмотра стойки</div>
-    </div>
-</div>
-<!-- Кнопка-ручка для открытия панели -->
-<div class="panel-tab" id="panelTab" title="Показать стойку">🗄️</div>
+<?php include 'modules/rack_panel/rack_panel_template.php'; ?>
 
 <script src="assets/js/scripts.js"></script>
 <script src="modules/sidebar/sidebar.js"></script>
