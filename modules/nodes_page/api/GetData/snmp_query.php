@@ -126,7 +126,80 @@ if ($vendor !== '' && !empty($cfg['vendors'][$vendor])) {
     $oid = $cfg['vendors'][$vendor];
 }
 
-// ---------------- Проверка наличия утилит ----------------
+// ---------------- Путь 1: встроенное расширение PHP ----------------
+// Если php_snmp включён, внешние утилиты не нужны вовсе: работаем напрямую
+// через функции PHP. Это и безопаснее (нет вызова оболочки), и переносимо —
+// ничего не надо класть в проект.
+if (extension_loaded('snmp')) {
+    // Числовой вывод OID: не зависим от наличия MIB-файлов и не ловим
+    // предупреждения «Cannot find module», которые сломали бы JSON
+    if (function_exists('snmp_set_oid_output_format')) {
+        @snmp_set_oid_output_format(SNMP_OID_OUTPUT_NUMERIC);
+    }
+    @snmp_set_quick_print(true);
+    @snmp_set_enum_print(false);
+
+    $timeoutUs = ((int)SNMP_TIMEOUT) * 1000000;
+    $retries   = (int)SNMP_RETRIES;
+
+    $result = null;
+    // Предупреждения PHP гасим: об ошибке судим по false и сообщаем сами
+    if ($version === '3') {
+        $result = $cfg['mode'] === 'get'
+            ? @snmp3_get($ip, $snmpUser, 'authNoPriv', 'MD5', $snmpPass, '', '', $oid, $timeoutUs, $retries)
+            : @snmp3_real_walk($ip, $snmpUser, 'authNoPriv', 'MD5', $snmpPass, '', '', $oid, $timeoutUs, $retries);
+    } else {
+        $result = $cfg['mode'] === 'get'
+            ? @snmp2_get($ip, $community, $oid, $timeoutUs, $retries)
+            : @snmp2_real_walk($ip, $community, $oid, $timeoutUs, $retries);
+    }
+
+    if ($result === false || $result === null) {
+        $err = mb_strtolower((string)(error_get_last()['message'] ?? ''));
+        if (strpos($err, 'authentication') !== false || strpos($err, 'community') !== false
+            || strpos($err, 'unknown user') !== false || strpos($err, 'security') !== false) {
+            echo json_encode([
+                'error' => $version === '3'
+                    ? 'Логин или пароль не подходят для этого устройства (SNMPv3)'
+                    : 'Community-строка не подходит для этого устройства',
+                'auth_failed' => true,
+            ]);
+            exit;
+        }
+        echo json_encode(['error' => 'Устройство ' . $ip . ' не ответило на SNMP-запрос (таймаут, недоступность или запрет в ACL)']);
+        exit;
+    }
+
+    // Приводим результат к тем же строкам «OID значение», что и вывод утилит,
+    // чтобы переиспользовать готовые парсеры
+    $lines = [];
+    if (is_array($result)) {
+        foreach ($result as $k => $v) {
+            $lines[] = ltrim((string)$k, '.') . ' ' . (string)$v;
+        }
+    } else {
+        $lines[] = ltrim((string)$oid, '.') . ' ' . (string)$result;
+    }
+    if (!empty($cfg['limit'])) {
+        $lines = array_slice($lines, 0, (int)$cfg['limit']);
+    }
+
+    $parser = $cfg['parser'];
+    $rows = function_exists($parser) ? $parser($lines, $cfg, $oid) : snmpParseRaw($lines, $cfg, $oid);
+
+    echo json_encode([
+        'success' => true,
+        'label'   => $cfg['label'],
+        'columns' => $cfg['columns'],
+        'rows'    => $rows,
+        'count'   => count($rows),
+        'oid'     => $oid,
+        'via'     => 'php-snmp',
+    ]);
+    exit;
+}
+
+// ---------------- Путь 2: внешние утилиты Net-SNMP ----------------
 $binary = $cfg['mode'] === 'get' ? SNMPGET_PATH : SNMPWALK_PATH;
 
 /**
