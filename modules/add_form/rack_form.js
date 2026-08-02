@@ -1,5 +1,44 @@
 // modules/add_form/rack_form.js – блок "Шкаф(-ы)" в форме узла
 
+// Поля, недоступные до выбора модели шкафа
+const RACK_DEPENDENT_FIELDS = ['name', 'building_id', 'workshop', 'floor', 'room', 'status', 'notes'];
+
+// Блокируем/разблокируем всё, кроме селектов производителя и модели
+function setRackFieldsEnabled(enabled) {
+    const form = document.getElementById('addRackForm');
+    if (!form) return;
+    RACK_DEPENDENT_FIELDS.forEach(fieldName => {
+        const el = form.querySelector(`[name="${fieldName}"]`);
+        if (!el) return;
+        el.disabled = !enabled;
+        // Поисковый селект рисует собственный input поверх исходного
+        const wrapper = el.closest('.searchable-select');
+        if (wrapper) {
+            const searchInput = wrapper.querySelector('.searchable-select-input');
+            if (searchInput) searchInput.disabled = !enabled;
+            wrapper.style.opacity = enabled ? '' : '0.5';
+        } else {
+            el.style.opacity = enabled ? '' : '0.5';
+        }
+    });
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn) submitBtn.disabled = !enabled;
+
+    let hint = form.querySelector('.rack-model-hint');
+    if (!enabled) {
+        if (!hint) {
+            hint = document.createElement('div');
+            hint.className = 'rack-model-hint';
+            hint.style.cssText = 'color:var(--text-secondary); font-size:0.8rem; margin-bottom:0.8rem;';
+            hint.textContent = 'Сначала выберите модель шкафа — остальные поля станут доступны.';
+            const modelGroup = form.querySelector('#rack-model-select')?.closest('.form-group');
+            if (modelGroup) modelGroup.insertAdjacentElement('afterend', hint);
+        }
+    } else if (hint) {
+        hint.remove();
+    }
+}
+
 window.openAddRackForm = async function() {
     const modal = document.getElementById('addRackModal');
     if (!modal) return;
@@ -33,12 +72,18 @@ window.openAddRackForm = async function() {
         new SearchableSelect(buildingSelect);
     } catch (e) { buildingSelect.innerHTML = '<option value="">-- ошибка --</option>'; }
 
-    // Обработчик смены производителя
-    vendorSelect.onchange = () => updateRackModelSelect(vendorSelect.value);
+    // Обработчик смены производителя (список моделей сбрасывается — снова блокируем поля)
+    vendorSelect.onchange = async () => {
+        await updateRackModelSelect(vendorSelect.value);
+        setRackFieldsEnabled(false);
+    };
 
     // Скрытое поле id_node
     document.getElementById('rack-node-id').value = window.AppState.currentRelatedId
         || window.AppState.currentExtraData?.node_id || '';
+
+    // До выбора модели остальные поля заблокированы
+    setRackFieldsEnabled(false);
 
     showModal(modal);
 };
@@ -97,6 +142,7 @@ async function updateRackModelSelect(vendorId = null) {
         modelSelect.onchange = function() {
             if (this.value === '__add_new__') {
                 this.value = '';
+                setRackFieldsEnabled(false);
                 openAddRackModelForm();
                 return;
             }
@@ -108,6 +154,8 @@ async function updateRackModelSelect(vendorId = null) {
                 vendorSelect.value = modelVendorId;
                 if (vendorSelect.searchableInstance) vendorSelect.searchableInstance.syncInputWithSelect();
             }
+            // Модель выбрана — открываем остальные поля
+            setRackFieldsEnabled(!!this.value);
         };
 
         // Создаём поисковый селект, если ещё не создан
@@ -247,6 +295,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (modelSelect) {
                         modelSelect.value = data.id;
                         if (modelSelect.searchableInstance) modelSelect.searchableInstance.syncInputWithSelect();
+                        // Новая модель выбрана — открываем остальные поля
+                        setRackFieldsEnabled(true);
                     }
                 } else {
                     let err = modelForm.querySelector('.form-error');

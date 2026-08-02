@@ -158,29 +158,51 @@ async function buildNodeForm(container, config, initialData, extraData, building
             inLocationBlock = false;
             locationBlock = null;
 
-            // --- Блок "Шкаф(-ы)" (сворачиваемый, как в форме оборудования) ---
+            // --- Блок "Шкаф(-ы)" (после расположения) ---
             const racksSection = document.createElement('div');
             racksSection.className = 'dossier-section';
-            racksSection.innerHTML = '<h4 onclick="toggleSection(this)"><span class="section-arrow">▶</span> 🗄️ Шкаф(-ы)</h4>';
+            racksSection.innerHTML = `
+                <h4 onclick="toggleSection(this)">
+                    <span class="section-arrow">▶</span> 🗄️ Шкаф(-ы)
+                </h4>
+            `;
             const racksBody = document.createElement('div');
             racksBody.className = 'section-body';
             racksBody.style.display = 'none';
-            racksBody.innerHTML = `
-                <div class="rack-tile-group" id="racks-tile-group">
-                    <label class="rack-tile-label rack-tile-add">
-                        <input type="checkbox" class="rack-tile-checkbox" style="display:none;" disabled>
-                        <div class="rack-tile-content" onclick="openAddRackForm()">
-                            <div class="rack-tile-name">+</div>
-                            <div class="rack-tile-detail">Добавить</div>
-                        </div>
-                    </label>
+
+            const racksTileGroup = document.createElement('div');
+            racksTileGroup.className = 'rack-tile-group';
+            racksTileGroup.id = 'racks-tile-group';
+
+            // Плитка «+ Добавить шкаф»
+            const addRackLabel = document.createElement('label');
+            addRackLabel.className = 'rack-tile-label rack-tile-add';
+            addRackLabel.id = 'add-rack-tile';
+            addRackLabel.innerHTML = `
+                <div class="rack-tile-content">
+                    <div class="rack-tile-name">+</div>
+                    <div class="rack-tile-detail">Добавить шкаф</div>
                 </div>
             `;
+
+            addRackLabel.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (typeof openAddRackForm === 'function') {
+                    openAddRackForm();
+                } else {
+                    console.error('Функция openAddRackForm не определена');
+                }
+            });
+
+            racksTileGroup.appendChild(addRackLabel);
+            racksBody.appendChild(racksTileGroup);
             racksSection.appendChild(racksBody);
             container.appendChild(racksSection);
 
-            if (initialData && (initialData.id_node || initialData.id)) {
-                loadNodeRacks(initialData.id_node || initialData.id);
+            // Загружаем шкафы, если узел уже существует (редактирование)
+            if (initialData && initialData.id_node) {
+                loadNodeRacks(initialData.id_node);
             }
         }
     }
