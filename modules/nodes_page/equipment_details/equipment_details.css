@@ -58,3 +58,89 @@
         font-size: 0.9rem;
     }
 }
+/* ============================================================
+   История изменений объекта (модалка #historyModal)
+   ============================================================ */
+.history-wrapper {
+    max-height: 55vh;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    background: var(--bg-card);
+}
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.83rem;
+}
+.history-table thead th {
+    padding: 0.5rem 0.7rem;
+    text-align: left;
+    background: var(--bg-header);
+    border-bottom: 2px solid var(--border-color);
+    color: var(--text-secondary);
+    font-weight: 600;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+.history-table tbody td {
+    padding: 0.42rem 0.7rem;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+    vertical-align: top;
+}
+.history-table tbody tr:hover { background: var(--table-hover, rgba(128,128,128,0.08)); }
+
+.history-nowrap { white-space: nowrap; }
+.history-muted { color: var(--text-secondary); }
+.history-error { color: var(--danger); }
+
+.history-empty {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--text-secondary);
+}
+
+/* Подробности: свёрнуты по умолчанию, раскрываются по клику */
+.history-details {
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    max-width: 320px;
+    word-break: break-word;
+}
+.history-details.history-expandable { cursor: pointer; }
+.history-details.history-expandable:hover { color: var(--accent); }
+.history-details.expanded { white-space: pre-wrap; }
+
+/* Пагинация истории */
+.history-pagination {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 0.6rem;
+    flex-wrap: wrap;
+}
+.history-total { font-size: 0.8rem; color: var(--text-secondary); margin-right: 0.5rem; }
+.history-page-controls { display: flex; align-items: center; gap: 0.25rem; flex-wrap: wrap; }
+.history-page-btn {
+    min-width: 1.9rem;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.3rem;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-family: inherit;
+}
+.history-page-btn:hover:not(:disabled) { border-color: var(--accent); }
+.history-page-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 600;
+}
+.history-page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.history-page-current { font-size: 0.78rem; color: var(--text-secondary); margin-left: 0.4rem; }

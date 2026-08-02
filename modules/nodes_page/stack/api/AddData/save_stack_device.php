@@ -89,6 +89,11 @@ try {
     }
 
     $pdo->commit();
+    // Журналируем добавление/изменение устройства в стеке
+    require_once dirname(__FILE__, 6) . '/includes/logger.php';
+    logAction($pdo, 'save_stack_device', 'equipment', $equipId, $hostname,
+        ['group_id' => $groupId]);
+
     echo json_encode(['success' => true, 'id' => $equipId, 'group_id' => $groupId]);
 } catch (PDOException $e) {
     $pdo->rollBack();

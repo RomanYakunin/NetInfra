@@ -205,3 +205,170 @@ function editCurrentEquipment() {
         }
     }
 }
+/* ============================================================
+   История изменений объекта (кнопка «📜 История изменений»).
+   Данные берутся из таблицы logs через ?ajax=get_object_logs.
+   ============================================================ */
+(function () {
+    'use strict';
+
+    let historyState = { objectType: 'equipment', objectId: null, page: 1, perPage: 20, totalPages: 1 };
+
+    // Человекочитаемые названия действий
+    const ACTION_LABELS = {
+        add_equipment: 'Добавлено', edit_equipment: 'Изменено', delete_equipment: 'Удалено',
+        move: 'Перемещено', move_equipment: 'Перемещено',
+        add_stack: 'Стек создан', edit_stack: 'Стек изменён',
+        save_stack_device: 'Изменено в стеке', delete_stack_device: 'Выведено из стека',
+        add_node: 'Узел добавлен', edit_node: 'Узел изменён', delete_node: 'Узел удалён',
+        add_rack: 'Шкаф добавлен',
+        login: 'Вход', logout: 'Выход'
+    };
+
+    function esc(str) {
+        if (str === null || str === undefined) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    /**
+     * Открывает историю изменений.
+     * Без аргументов берёт оборудование из открытой карточки досье.
+     */
+    window.openEquipmentHistory = function (objectType, objectId, titleText) {
+        const detailsModal = document.getElementById('equipmentDetailsModal');
+        historyState.objectType = objectType || 'equipment';
+        historyState.objectId = objectId || detailsModal?.dataset.equipId || null;
+        historyState.page = 1;
+
+        if (!historyState.objectId) {
+            if (typeof showToast === 'function') showToast('Объект не определён', 'warning');
+            return;
+        }
+
+        const modal = document.getElementById('historyModal');
+        if (!modal) return;
+
+        const titleEl = document.getElementById('historyTitle');
+        if (titleEl) {
+            const name = titleText
+                || document.getElementById('detailsTitle')?.textContent?.trim()
+                || '';
+            titleEl.textContent = name ? `История изменений — ${name}` : 'История изменений';
+        }
+
+        // Карточку досье не закрываем: история открывается поверх неё
+        if (typeof showModal === 'function') showModal(modal);
+        else modal.classList.add('visible');
+
+        loadHistory(1);
+    };
+
+    window.closeEquipmentHistory = function () {
+        document.getElementById('historyModal')?.classList.remove('visible');
+    };
+
+    async function loadHistory(page) {
+        if (page) historyState.page = page;
+        const tbody = document.getElementById('historyTableBody');
+        if (!tbody) return;
+        tbody.innerHTML = '<tr><td colspan="5" class="history-empty">Загрузка…</td></tr>';
+
+        const params = new URLSearchParams({
+            object_type: historyState.objectType,
+            object_id: historyState.objectId,
+            page: historyState.page,
+            per_page: historyState.perPage
+        });
+
+        try {
+            const resp = await fetch('?ajax=get_object_logs&' + params.toString());
+            const data = await resp.json();
+            if (data.error) {
+                tbody.innerHTML = `<tr><td colspan="5" class="history-empty history-error">${esc(data.error)}</td></tr>`;
+                return;
+            }
+            historyState.page = data.page || 1;
+            historyState.totalPages = data.total_pages || 1;
+            renderHistory(data.data || []);
+            renderHistoryPagination(data.total || 0);
+        } catch (e) {
+            tbody.innerHTML = '<tr><td colspan="5" class="history-empty history-error">Ошибка загрузки</td></tr>';
+        }
+    }
+
+    function renderHistory(rows) {
+        const tbody = document.getElementById('historyTableBody');
+        if (!tbody) return;
+
+        if (!rows.length) {
+            tbody.innerHTML = '<tr><td colspan="5" class="history-empty">Изменений пока не зафиксировано</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = rows.map(r => {
+            const dt = (r.created_at || '').replace('T', ' ');
+            const action = ACTION_LABELS[r.action] || r.action;
+            const details = r.details || '';
+            const short = details.length > 80 ? details.slice(0, 80) + '…' : details;
+
+            return `
+            <tr>
+                <td class="history-nowrap">${esc(dt)}</td>
+                <td>${esc(r.username || 'system')}</td>
+                <td>${esc(action)}</td>
+                <td>${esc(r.object_name || '—')}</td>
+                <td class="history-details"${details ? ' data-full="' + esc(details) + '" title="Нажмите, чтобы раскрыть"' : ''}>${esc(short) || '<span class="history-muted">—</span>'}</td>
+            </tr>`;
+        }).join('');
+
+        // Раскрытие подробностей по клику
+        tbody.querySelectorAll('.history-details[data-full]').forEach(td => {
+            td.classList.add('history-expandable');
+            td.addEventListener('click', function () {
+                const full = this.dataset.full;
+                if (this.classList.contains('expanded')) {
+                    this.classList.remove('expanded');
+                    this.textContent = full.length > 80 ? full.slice(0, 80) + '…' : full;
+                } else {
+                    this.classList.add('expanded');
+                    this.textContent = full;
+                }
+            });
+        });
+    }
+
+    function renderHistoryPagination(total) {
+        const el = document.getElementById('historyPagination');
+        if (!el) return;
+
+        const totalPages = historyState.totalPages;
+        let html = `<span class="history-total">Всего записей: ${total}</span>`;
+
+        if (totalPages > 1) {
+            const btn = (p, label, disabled, active) =>
+                `<button type="button" class="history-page-btn${active ? ' active' : ''}" ` +
+                `data-page="${p}"${disabled ? ' disabled' : ''}>${label}</button>`;
+
+            html += '<span class="history-page-controls">';
+            html += btn(historyState.page - 1, '‹', historyState.page <= 1, false);
+
+            const from = Math.max(1, historyState.page - 2);
+            const to = Math.min(totalPages, from + 4);
+            for (let p = from; p <= to; p++) html += btn(p, String(p), false, p === historyState.page);
+
+            html += btn(historyState.page + 1, '›', historyState.page >= totalPages, false);
+            html += `<span class="history-page-current">стр. ${historyState.page} из ${totalPages}</span>`;
+            html += '</span>';
+        }
+
+        el.innerHTML = html;
+        el.querySelectorAll('.history-page-btn').forEach(b => {
+            b.addEventListener('click', () => {
+                const p = parseInt(b.dataset.page, 10);
+                if (p >= 1 && p <= totalPages && p !== historyState.page) loadHistory(p);
+            });
+        });
+    }
+})();

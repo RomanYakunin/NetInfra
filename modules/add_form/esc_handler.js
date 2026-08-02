@@ -66,6 +66,7 @@
             case 'kbRowModal':            if (typeof kbCloseRowModal === 'function') kbCloseRowModal(); break;
             case 'kbColumnModal':         if (typeof kbCloseColumnModal === 'function') kbCloseColumnModal(); break;
             case 'equipmentDetailsModal': if (typeof closeEquipmentDetails === 'function') closeEquipmentDetails(); break;
+            case 'historyModal':          if (typeof closeEquipmentHistory === 'function') closeEquipmentHistory(); break;
         }
 
         // Гасим событие, чтобы Escape закрыл ровно одну (верхнюю) модалку

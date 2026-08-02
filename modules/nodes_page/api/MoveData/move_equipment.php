@@ -98,10 +98,79 @@ try {
     $pdo->beginTransaction();
 
     if ($direction === 'warehouse') {
+        // ---------- Стек переезжает на склад целиком ----------
+        // Стек не может быть «частично на складе»: если among выбранных есть
+        // устройство из стека, забираем всех его собратьев и распускаем группу.
         $placeholders = implode(',', array_fill(0, count($cleanEquipIds), '?'));
-        $params = array_merge([$destinationId], $cleanEquipIds);
-        $stmt = $pdo->prepare("UPDATE equipment SET id_node = NULL, warehouse_id = ?, group_id = NULL WHERE id IN ($placeholders)");
-        $stmt->execute($params);
+        $stmtGroups = $pdo->prepare("SELECT DISTINCT group_id FROM equipment WHERE id IN ($placeholders) AND group_id IS NOT NULL");
+        $stmtGroups->execute($cleanEquipIds);
+        $groupIds = array_map('intval', $stmtGroups->fetchAll(PDO::FETCH_COLUMN));
+
+        $movedIds = $cleanEquipIds;
+        if ($groupIds) {
+            $gp = implode(',', array_fill(0, count($groupIds), '?'));
+            $stmtMembers = $pdo->prepare("SELECT id FROM equipment WHERE group_id IN ($gp)");
+            $stmtMembers->execute($groupIds);
+            $memberIds = array_map('intval', $stmtMembers->fetchAll(PDO::FETCH_COLUMN));
+            $movedIds = array_values(array_unique(array_merge($movedIds, $memberIds)));
+        }
+
+        // Если выбрали не весь стек — просим подтверждение (кроме случая,
+        // когда клиент уже подтвердил флагом confirm_stack_move)
+        if ($groupIds && count($movedIds) > count($cleanEquipIds) && empty($_POST['confirm_stack_move'])) {
+            $pdo->rollBack();
+            $stmtNames = $pdo->prepare("SELECT hostname FROM equipment_groups WHERE id IN (" . implode(',', array_fill(0, count($groupIds), '?')) . ")");
+            $stmtNames->execute($groupIds);
+            echo json_encode([
+                'need_stack_confirm' => true,
+                'stack_total'   => count($movedIds),
+                'selected'      => count($cleanEquipIds),
+                'stack_names'   => $stmtNames->fetchAll(PDO::FETCH_COLUMN),
+                'message'       => 'Будет перемещён весь стек (' . count($movedIds) . ' устройств). Продолжить?',
+            ]);
+            exit;
+        }
+
+        // Имя склада — для журнала и ответа
+        $stmtWh = $pdo->prepare("SELECT name FROM warehouses WHERE id = ?");
+        $stmtWh->execute([$destinationId]);
+        $warehouseName = $stmtWh->fetchColumn() ?: ('склад #' . $destinationId);
+
+        // Названия устройств до перемещения — для журнала
+        $mp = implode(',', array_fill(0, count($movedIds), '?'));
+        $stmtHosts = $pdo->prepare("SELECT id, hostname FROM equipment WHERE id IN ($mp)");
+        $stmtHosts->execute($movedIds);
+        $hostnames = $stmtHosts->fetchAll(PDO::FETCH_KEY_PAIR);
+
+        // Столбца Groupe в схеме нет (удалён ранее) — принадлежность к стеку
+        // определяется исключительно по group_id
+        $stmt = $pdo->prepare("UPDATE equipment SET id_node = NULL, warehouse_id = ?, group_id = NULL WHERE id IN ($mp)");
+        $stmt->execute(array_merge([$destinationId], $movedIds));
+
+        // Распущенные стеки удаляем, чтобы не копился мусор
+        if ($groupIds) {
+            $gp = implode(',', array_fill(0, count($groupIds), '?'));
+            $pdo->prepare("DELETE FROM equipment_groups WHERE id IN ($gp)")->execute($groupIds);
+        }
+
+        $pdo->commit();
+
+        // Журналируем каждое перемещённое устройство
+        require_once dirname(__FILE__, 5) . '/includes/logger.php';
+        foreach ($movedIds as $mid) {
+            logAction($pdo, 'move', 'equipment', $mid, $hostnames[$mid] ?? '',
+                'Перемещено на склад «' . $warehouseName . '»'
+                . ($groupIds ? ' (стек расформирован)' : ''));
+        }
+
+        echo json_encode([
+            'success'        => true,
+            'moved_count'    => count($movedIds),
+            'warehouse_name' => $warehouseName,
+            'stack_moved'    => !empty($groupIds),
+            'stack_dissolved'=> count($groupIds),
+        ]);
+        exit;
     } elseif ($direction === 'another_node') {
         if ($isAddToStack) {
             $stackGroupId = (int)($_POST['stack_group_id'] ?? 0);
@@ -146,7 +215,23 @@ try {
     $stmtNode->execute([$destinationId]);
     $kyNumber = $stmtNode->fetchColumn();
 
+    // Названия устройств для журнала (до commit — данные уже обновлены,
+    // но hostname перемещением не меняется, кроме случая добавления в стек)
+    $mp = implode(',', array_fill(0, count($cleanEquipIds), '?'));
+    $stmtHosts = $pdo->prepare("SELECT id, hostname FROM equipment WHERE id IN ($mp)");
+    $stmtHosts->execute($cleanEquipIds);
+    $hostnames = $stmtHosts->fetchAll(PDO::FETCH_KEY_PAIR);
+
     $pdo->commit();
+
+    // Журналируем перемещение в узел
+    require_once dirname(__FILE__, 5) . '/includes/logger.php';
+    $destLabel = $kyNumber ? 'КУ-' . $kyNumber : ('узел #' . $destinationId);
+    foreach ($cleanEquipIds as $mid) {
+        logAction($pdo, 'move', 'equipment', $mid, $hostnames[$mid] ?? '',
+            'Перемещено в ' . $destLabel . ($isAddToStack ? ' (добавлено в стек)' : ''));
+    }
+
     echo json_encode([
         'success' => true,
         'moved_count' => count($cleanEquipIds),

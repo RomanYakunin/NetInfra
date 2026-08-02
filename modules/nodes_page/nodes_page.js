@@ -878,9 +878,31 @@ function submitMove() {
                 showStackSelection(data);
                 return;
             }
+            // Стек нельзя перевести на склад частично: сервер сообщает, что
+            // заберёт всех участников, и ждёт подтверждения
+            if (data.need_stack_confirm) {
+                const msg = data.message
+                    || `Будет перемещён весь стек (${data.stack_total} устройств). Продолжить?`;
+                if (!confirm(msg)) return;
+                formData.append('confirm_stack_move', '1');
+                fetch('?ajax=move_equipment', { method: 'POST', body: formData })
+                    .then(r => r.json())
+                    .then(handleMoveResult)
+                    .catch(() => showToast('Ошибка сети', 'error'));
+                return;
+            }
+            handleMoveResult(data);
+        })
+        .catch(err => alert('Ошибка сети'));
+
+    // Обработка успешного/неуспешного ответа (вынесена, т.к. вызывается
+    // повторно после подтверждения переноса стека)
+    function handleMoveResult(data) {
             if (data.success) {
                 closeMoveModal();
-                if (data.device_hostname) {
+                if (data.stack_moved) {
+                    showToast(`Стек перемещён на склад «${data.warehouse_name || destinationName}» целиком (${data.moved_count} устр.), группа расформирована`, 'success');
+                } else if (data.device_hostname) {
                     showToast(`Устройство ${data.device_hostname} добавлено в стек ${data.stack_hostname || ''} в КУ-${data.ky_number || '?'}`, 'success');
                 } else {
                     const devicesList = movedDevices.join(', ');
@@ -898,12 +920,15 @@ function submitMove() {
                     if (typeof refreshNodeEquipment === 'function') refreshNodeEquipment(destinationId);
                     if (typeof refreshSingleNode === 'function') refreshSingleNode(destinationId);
                 }
+                // Склад-приёмник тоже обновляем, если страница склада открыта
+                if (currentMoveDirection === 'warehouse' && typeof loadWarehouseEquipment === 'function') {
+                    loadWarehouseEquipment();
+                }
                 if (typeof window.onMoveComplete === 'function') window.onMoveComplete();
             } else {
                 showToast(data.error || 'Ошибка перемещения', 'error');
             }
-        })
-        .catch(err => alert('Ошибка сети'));
+    }
 }
 
 function closeMoveModal() {

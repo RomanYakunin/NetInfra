@@ -77,6 +77,7 @@ return [
     // ----------------------------- ЖУРНАЛ ДЕЙСТВИЙ -----------------------------
     'get_logs'                => 'modules/journal/api/get_logs.php',
     'get_log_detail'          => 'modules/journal/api/get_log_detail.php',
+    'get_object_logs'         => 'modules/journal/api/get_object_logs.php',   // история одного объекта
 
     // ----------------------------- ПОЛЬЗОВАТЕЛИ -----------------------------
     'get_users'               => 'modules/users/api/GetData/get_users.php',
