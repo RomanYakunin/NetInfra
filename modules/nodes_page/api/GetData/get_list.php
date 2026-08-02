@@ -32,6 +32,46 @@ if ($list === 'rack_models') {
     exit;
 }
 
+// Шкафы: своя логика — фильтр по узлу и составное название
+if ($list === 'racks') {
+    // node_id передаётся, когда оборудование добавляется в конкретный узел:
+    // тогда показываем только шкафы этого узла. Без параметра — все шкафы
+    // (например, при добавлении оборудования на склад).
+    $nodeId = isset($_GET['node_id']) ? (int)$_GET['node_id'] : 0;
+
+    $sql = "SELECT r.id_rack AS id,
+                   TRIM(CONCAT_WS(' · ',
+                        NULLIF(r.name, ''),
+                        NULLIF(rm.model_name, ''),
+                        IF(rm.height_u IS NOT NULL, CONCAT(rm.height_u, 'U'), NULL)
+                   )) AS name
+            FROM racks r
+            LEFT JOIN rack_models rm ON r.model_id = rm.id";
+    $params = [];
+    if ($nodeId > 0) {
+        $sql .= " WHERE r.id_node = ?";
+        $params[] = $nodeId;
+    }
+    $sql .= " ORDER BY r.name";
+
+    try {
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // Шкаф без названия и модели — показываем хотя бы его ID
+        foreach ($data as &$row) {
+            if ($row['name'] === null || $row['name'] === '') {
+                $row['name'] = 'Шкаф #' . $row['id'];
+            }
+        }
+        unset($row);
+        echo json_encode(['data' => $data, 'list_name' => $list]);
+    } catch (PDOException $e) {
+        echo json_encode(['error' => $e->getMessage()]);
+    }
+    exit;
+}
+
 $allowed = [
     'buildings'          => ['table' => 'Buildings',        'id' => 'Id',             'name' => 'Name_Building'],
     'node_types'         => ['table' => 'node_types',       'id' => 'id_node_type',   'name' => 'name_node_type'],

@@ -211,6 +211,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            // Модули и сервисы лежат вне обычных полей формы (карточки/плитки),
+            // поэтому в FormData их нужно добавить отдельно.
+            // Без этого подключённые сервисы устройства стека не сохранялись.
+            if (typeof appendEquipmentExtras === 'function') {
+                appendEquipmentExtras(formData, document.getElementById('stackDeviceFormFields'));
+            }
+
             try {
                 const id = formData.get('id');
                 const url = id ? '?ajax=update_equipment' : '?ajax=add_equipment';

@@ -412,51 +412,19 @@ if (document.getElementById('addStackDeviceModal')?.classList.contains('visible'
             if (state.currentFormType === 'equipment') {
                 // === Обработка формы устройства стека (stack_mode) ===
                 if (state.currentExtraData?.stack_mode) {
-                    // Собираем модули
-                    const modulesContainer = document.getElementById('modules-container');
-                    const modules = {};
-                    if (modulesContainer) {
-                        modulesContainer.querySelectorAll('.module-column[data-module-type]').forEach(col => {
-                            const type = col.dataset.moduleType;
-                            const tiles = col.querySelectorAll('.module-tile');
-                            if (tiles.length > 0) {
-                                modules[type] = [];
-                                tiles.forEach(tile => {
-                                    const inputs = tile.querySelectorAll('input');
-                                    const mod = {};
-                                    inputs.forEach(inp => mod[inp.dataset.field] = inp.value);
-                                    mod.name = tile.querySelector('.module-name')?.textContent?.trim() || '';
-                                    modules[type].push(mod);
-                                });
-                            }
-                        });
-                    }
-                    this.querySelector('input[name="modules"]')?.remove();
-                    const modulesInput = document.createElement('input');
-                    modulesInput.type = 'hidden';
-                    modulesInput.name = 'modules';
-                    modulesInput.value = JSON.stringify(modules);
-                    this.appendChild(modulesInput);
-
-                    // Собираем сервисы
-                    const services = {};
-                    document.querySelectorAll('#services-grid .service-card').forEach(card => {
-                        const svc = card.dataset.service;
-                        if (svc === 'radius_tacacs') {
-                            const statusText = card.querySelector('#radius-tacacs-status span').textContent.trim();
-                            if (statusText.includes('RADIUS')) services.RADIUS = true;
-                            else if (statusText.includes('TACACS+')) services['TACACS+'] = true;
-                        } else {
-                            const connected = card.querySelector('.service-status').classList.contains('service-connected');
-                            services[svc] = connected;
-                        }
+                    // Модули и сервисы (общий сбор — см. equipment_dossier.js).
+                    // Кладём их скрытыми полями, т.к. ниже FormData строится
+                    // заново из этой же формы.
+                    const scope = document.getElementById('addFormFields');
+                    [['modules', collectEquipmentModules(scope)],
+                     ['services', collectEquipmentServices(scope)]].forEach(([name, value]) => {
+                        this.querySelector(`input[name="${name}"]`)?.remove();
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = name;
+                        input.value = JSON.stringify(value);
+                        this.appendChild(input);
                     });
-                    this.querySelector('input[name="services"]')?.remove();
-                    const servicesInput = document.createElement('input');
-                    servicesInput.type = 'hidden';
-                    servicesInput.name = 'services';
-                    servicesInput.value = JSON.stringify(services);
-                    this.appendChild(servicesInput);
 
                     const fd = new FormData(this);
                     // Добавляем скрытые/заблокированные поля
@@ -539,37 +507,11 @@ if (stackContainer && state.currentExtraData?.force_stack) {
     .finally(() => { if (submitBtn) submitBtn.disabled = false; });
     return;
 }
-                // Обычное оборудование: модули, сервисы
-                const modules = {};
-                document.querySelectorAll('#modules-container .module-column[data-module-type]').forEach(col => {
-                    const type = col.dataset.moduleType;
-                    const tiles = col.querySelectorAll('.module-tile');
-                    if (tiles.length > 0) {
-                        modules[type] = [];
-                        tiles.forEach(tile => {
-                            const inputs = tile.querySelectorAll('input');
-                            const mod = {};
-                            inputs.forEach(inp => mod[inp.dataset.field] = inp.value);
-                            mod.name = tile.querySelector('.module-name')?.textContent?.trim() || '';
-                            modules[type].push(mod);
-                        });
-                    }
-                });
-                formData.append('modules', JSON.stringify(modules));
-
-                const services = {};
-                document.querySelectorAll('#services-grid .service-card').forEach(card => {
-                    const svc = card.dataset.service;
-                    if (svc === 'radius_tacacs') {
-                        const statusText = card.querySelector('#radius-tacacs-status span').textContent.trim();
-                        if (statusText.includes('RADIUS')) services.RADIUS = true;
-                        else if (statusText.includes('TACACS+')) services['TACACS+'] = true;
-                    } else {
-                        const connected = card.querySelector('.service-status').classList.contains('service-connected');
-                        services[svc] = connected;
-                    }
-                });
-                formData.append('services', JSON.stringify(services));
+                // Обычное оборудование: модули и сервисы (общий сбор — см.
+                // appendEquipmentExtras в modules/add_form/equipment_dossier.js)
+                if (typeof appendEquipmentExtras === 'function') {
+                    appendEquipmentExtras(formData, document.getElementById('addFormFields'));
+                }
             }
 
             if (state.currentInitialData) {

@@ -342,6 +342,15 @@ if (typeof setupEquipmentValidation === 'function') {
         }
     });
 
+    // Узел, в который добавляется оборудование, — нужен для фильтра шкафов.
+    // Для устройства стека берём currentStackNodeId, для обычного оборудования —
+    // relatedId / extraData.node_id, при редактировании — id_node записи.
+    const rackNodeId = state.currentStackNodeId
+        || state.currentRelatedId
+        || extraData?.node_id
+        || initialData?.id_node
+        || null;
+
     // Загрузка опций для всех селектов
     const allSelects = fieldsContainer.querySelectorAll('select[data-source]');
     for (const select of allSelects) {
@@ -350,13 +359,22 @@ if (typeof setupEquipmentValidation === 'function') {
         let items = [];
         try {
             if (source === 'vendors') listName = 'vendors';
-            const resp = await fetchJSON(`?ajax=get_list&list=${listName}`);
+            let url = `?ajax=get_list&list=${listName}`;
+            // В селекте «Шкаф» показываем только шкафы этого узла.
+            // Если узел неизвестен (склад) — параметр не передаём, вернутся все.
+            if (select.name === 'id_rack' && rackNodeId) {
+                url += `&node_id=${encodeURIComponent(rackNodeId)}`;
+            }
+            const resp = await fetchJSON(url);
             items = resp.data || [];
         } catch (e) {}
         select.innerHTML = '<option value="">-- не выбрано --</option>';
         items.forEach(item => select.appendChild(new Option(item.name, item.id)));
-        const addOpt = new Option('Добавить...', '__add_new__');
-        select.appendChild(addOpt);
+        // У шкафов своя форма добавления (в форме узла) — пункт «Добавить...» не нужен
+        if (select.name !== 'id_rack') {
+            const addOpt = new Option('Добавить...', '__add_new__');
+            select.appendChild(addOpt);
+        }
         new SearchableSelect(select);
 
         select.addEventListener('change', function() {
@@ -903,4 +921,86 @@ function toggleSection(headerElement) {
         const arrow = headerElement.querySelector('.section-arrow');
         if (arrow) arrow.textContent = isHidden ? '▼' : '▶';
     }
+}
+/* ============================================================
+   Сбор данных секций «Модули» и «Подключённые сервисы».
+
+   Раньше эта логика была продублирована в add_form.js (дважды:
+   для обычного оборудования и для устройства стека), а в stack.js
+   отсутствовала вовсе — из-за чего сервисы устройства стека
+   не сохранялись. Теперь единая реализация здесь.
+   ============================================================ */
+
+/**
+ * Собирает модули (SFP/БП) из секции «Модули».
+ * @param {HTMLElement} scope Контейнер формы (по умолчанию — документ)
+ * @returns {Object} { sfp: [...], psu: [...] }
+ */
+function collectEquipmentModules(scope) {
+    const root = scope || document;
+    const modules = {};
+    root.querySelectorAll('#modules-container .module-column[data-module-type]').forEach(col => {
+        const type = col.dataset.moduleType;
+        const tiles = col.querySelectorAll('.module-tile');
+        if (tiles.length > 0) {
+            modules[type] = [];
+            tiles.forEach(tile => {
+                const mod = {};
+                tile.querySelectorAll('input').forEach(inp => {
+                    if (inp.dataset.field) mod[inp.dataset.field] = inp.value;
+                });
+                mod.name = tile.querySelector('.module-name')?.textContent?.trim() || '';
+                modules[type].push(mod);
+            });
+        }
+    });
+    return modules;
+}
+
+/**
+ * Собирает состояние карточек сервисов.
+ *
+ * Ключи берутся из data-service карточки: 'Zabbix', 'NTP', 'Graylog'
+ * (сервер приводит их к нижнему регистру) и отдельная карточка
+ * radius_tacacs, которая разворачивается в RADIUS / TACACS+.
+ *
+ * @param {HTMLElement} scope Контейнер формы (по умолчанию — документ)
+ * @returns {Object} { Zabbix: true, NTP: false, RADIUS: true, ... }
+ */
+function collectEquipmentServices(scope) {
+    const root = scope || document;
+    const services = {};
+    root.querySelectorAll('#services-grid .service-card').forEach(card => {
+        const svc = card.dataset.service;
+        if (!svc) return;
+
+        if (svc === 'radius_tacacs') {
+            // Карточка может быть ещё не отрисована полностью — проверяем узел,
+            // иначе обработчик submit падал бы с TypeError и форма не отправлялась
+            const statusEl = card.querySelector('#radius-tacacs-status span')
+                || card.querySelector('#radius-tacacs-status');
+            const statusText = statusEl ? statusEl.textContent.trim() : '';
+            if (statusText.includes('RADIUS')) {
+                services.RADIUS = true;
+                services['TACACS+'] = false;
+            } else if (statusText.includes('TACACS+')) {
+                services['TACACS+'] = true;
+                services.RADIUS = false;
+            }
+        } else {
+            const statusEl = card.querySelector('.service-status');
+            services[svc] = !!(statusEl && statusEl.classList.contains('service-connected'));
+        }
+    });
+    return services;
+}
+
+/**
+ * Добавляет модули и сервисы в FormData.
+ * Используется и обычной формой оборудования, и формой устройства стека.
+ */
+function appendEquipmentExtras(formData, scope) {
+    formData.set('modules', JSON.stringify(collectEquipmentModules(scope)));
+    formData.set('services', JSON.stringify(collectEquipmentServices(scope)));
+    return formData;
 }
