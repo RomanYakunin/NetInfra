@@ -49,22 +49,32 @@
 
     <!-- Нижний блок -->
     <div class="sidebar-footer">
-        <!-- Администрирование -->
+        <?php if (($_SESSION['role'] ?? '') === 'admin'): ?>
+        <!-- Администрирование (только для админа) -->
         <div class="nav-section">
             <div class="nav-section-title">
-                <span class="section-icon">⚙️</span> 
+                <span class="section-icon">⚙️</span>
                 <span class="section-label">Администрирование</span>
             </div>
-            <a href="?page=database_manager" class="nav-item">
-                <span class="nav-icon">🗄️</span> <span class="nav-label">База данных</span>
+            <a href="?page=database_manager" class="nav-item <?= $page=='database_manager' ? 'active' : '' ?>">
+                <span class="nav-icon">🗄️</span> <span class="nav-label">База знаний</span>
+            </a>
+            <a href="?page=users" class="nav-item <?= $page=='users' ? 'active' : '' ?>">
+                <span class="nav-icon">👥</span> <span class="nav-label">Пользователи</span>
             </a>
         </div>
+        <?php endif; ?>
 
+        <?php
+            $sidebarLogin = $_SESSION['login'] ?? '';
+            $sidebarRole  = $_SESSION['role'] ?? '';
+            $sidebarRoleLabel = $sidebarRole === 'admin' ? 'Администратор' : 'Пользователь';
+        ?>
         <div class="user-block">
-            <div class="user-avatar">A</div>
+            <div class="user-avatar"><?= htmlspecialchars(mb_strtoupper(mb_substr($sidebarLogin, 0, 1))) ?></div>
             <div class="user-details">
-                <div class="user-name">Администратор</div>
-                <div class="user-role">admin@netinfra</div>
+                <div class="user-name"><?= htmlspecialchars($sidebarRoleLabel) ?></div>
+                <div class="user-role"><?= htmlspecialchars($sidebarLogin) ?></div>
             </div>
             <button onclick="location.href='?logout=1'">Выйти</button>
         </div>

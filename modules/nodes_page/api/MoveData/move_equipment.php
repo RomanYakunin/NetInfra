@@ -1,4 +1,7 @@
 <?php
+// Проверка прав: изменять данные может только администратор
+require_once dirname(__FILE__, 5) . '/includes/acl.php';
+requireAdmin();
 // api/MoveData/move_equipment.php – перемещение оборудования на склад или в другой узел
 
 if (!isset($pdo)) {

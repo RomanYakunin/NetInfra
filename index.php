@@ -22,16 +22,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['ajax']) && $_GET['ajax
 $isLoggedIn = isset($_SESSION['user_id']);
 $role = $isLoggedIn ? $_SESSION['role'] : null;
 
-// Если не админ – показываем страницу входа или запрета
-if (!$isLoggedIn || $role !== 'admin') {
+// Неавторизованным показываем форму входа.
+// Роль 'user' допускается в приложение в режиме «только просмотр»:
+// запись блокируется на сервере через includes/acl.php (requireAdmin),
+// а элементы управления скрываются на клиенте по window.isAdmin.
+if (!$isLoggedIn) {
     ?>
     <!DOCTYPE html>
     <html lang="ru">
     <head>
         <link rel="icon" href="/favicon.ico" type="image/x-icon">
 <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-<link rel="stylesheet" href="modules/warehouse_page/warehouse.css">
-<link rel="stylesheet" href="modules/add_form/checkbox_google.css".
+<link rel="stylesheet" href="modules/warehouse_page/warehouse_page.css">
+<link rel="stylesheet" href="modules/add_form/checkbox_google.css">
 
         <meta charset="UTF-8">
         <title>Авторизация</title>
@@ -81,14 +84,6 @@ if (!$isLoggedIn || $role !== 'admin') {
         </style>
     </head>
     <body>
-        <?php if ($isLoggedIn && $role === 'user'): ?>
-            <!-- Доступ запрещён -->
-            <div class="forbidden">
-                <h2>Доступ запрещён</h2>
-                <p>Ваша роль не позволяет просматривать эту страницу.</p>
-                <a href="?logout=1">Выйти</a>
-            </div>
-        <?php else: ?>
             <!-- Форма входа -->
             <div class="login-box">
                 <h2>Вход в систему</h2>
@@ -115,16 +110,8 @@ if (!$isLoggedIn || $role !== 'admin') {
                         const res = await fetch('?ajax=auth', { method: 'POST', body: formData });
                         const data = await res.json();
                         if (data.success) {
-                            if (data.role === 'admin') {
-                                location.reload();
-                            } else {
-                                document.body.innerHTML = `
-                                    <div class="forbidden">
-                                        <h2>Доступ запрещён</h2>
-                                        <p>Ваша роль не позволяет просматривать эту страницу.</p>
-                                        <a href="?logout=1">Выйти</a>
-                                    </div>`;
-                            }
+                            // В приложение пускаем и админа, и пользователя (только просмотр)
+                            location.reload();
                         } else {
                             errorDiv.textContent = data.error || 'Ошибка входа';
                         }
@@ -133,7 +120,6 @@ if (!$isLoggedIn || $role !== 'admin') {
                     }
                 });
             </script>
-        <?php endif; ?>
     </body>
     </html>
     
@@ -497,9 +483,9 @@ if ($_GET['ajax'] === 'get_stack_members' && isset($_GET['equip_id'])) {
         LEFT JOIN device_types dt ON e.device_type_id = dt.id_type_device
         LEFT JOIN vendors v ON e.vendor_id = v.id_vendor
         LEFT JOIN device_models dm ON e.model_id = dm.id
-        WHERE e.id_node = ? 
-          AND e.ip_address = ? 
-          AND e.Groupe = 2 
+        WHERE e.id_node = ?
+          AND e.ip_address = ?
+          AND e.group_id IS NOT NULL
         ORDER BY e.Slot ASC
     ");
     $stmt->execute([$eq['id_node'], $eq['ip_address']]);
@@ -519,31 +505,39 @@ $page = $_GET['page'] ?? 'nodes';
 // Подключаем header (статистика для верхней панели)
 require_once 'modules/header/header.php';
 
+// Страницы, доступные только администратору
+$adminOnlyPages = ['users', 'database_manager'];
+if (in_array($page, $adminOnlyPages, true) && ($_SESSION['role'] ?? '') !== 'admin') {
+    $error = 'Доступ запрещён: страница доступна только администратору';
+    $page = 'forbidden';
+}
+
 // Подготовка данных для вкладок
 switch ($page) {
     case 'nodes':
         require_once 'modules/nodes_page/nodes_page.php';
         break;
-    //  case 'phones':
-    // require_once 'modules/phones_table/phones_table.php';
-    // break;
     case 'checklist':
         require_once 'modules/checklist_table/checklist_table.php';
         break;
     case 'dashboard':
         require_once 'modules/dashboard/dashboard.php';
         break;
-    default:
-        $error = 'Страница не найдена'; 
     case 'warehouse':
-    require_once 'modules/warehouse_page/warehouse_page.php';
-    break;
-// case 'printers':
-//     require_once 'modules/printers_table/printers_table.php';
-//     break;
-case 'database_manager':
-    require_once 'modules/knowledge_base/knowledge_base.php';
-    break;
+        require_once 'modules/warehouse_page/warehouse_page.php';
+        break;
+    case 'database_manager':
+        require_once 'modules/knowledge_base/knowledge_base.php';
+        break;
+    case 'users':
+        require_once 'modules/users/users.php';
+        break;
+    case 'forbidden':
+        // $error уже установлен выше
+        break;
+    default:
+        $error = 'Страница не найдена';
+        break;
 }
 ?>
 <!DOCTYPE html>
@@ -750,9 +744,6 @@ case 'database_manager':
                     case 'nodes':
                         include 'modules/nodes_page/nodes_page_template.php';
                         break;
-                    case 'phones':
-                        include 'modules/phones_table/phones_table_template.php';
-                        break;
                     case 'checklist':
                         include 'modules/checklist_table/checklist_table_template.php';
                         break;
@@ -761,8 +752,11 @@ case 'database_manager':
                         break;
                     case 'warehouse':
                         include 'modules/warehouse_page/warehouse_page_template.php';
-                        break;      
-    }
+                        break;
+                    case 'users':
+                        include 'modules/users/users_template.php';
+                        break;
+                }
     ?>
             <?php endif; ?>
         </div>
@@ -936,6 +930,7 @@ case 'database_manager':
 <script src="assets/js/scripts.js"></script>
 <script src="modules/sidebar/sidebar.js"></script>
 <script src="modules/common/toast.js"></script>
+<script src="modules/common/acl_client.js"></script>
 <script src="modules/nodes_page/buildings/buildings.js"></script>
 <script src="modules/nodes_page/nodes_page.js"></script>
 <?php if ($page === 'dashboard'): ?>

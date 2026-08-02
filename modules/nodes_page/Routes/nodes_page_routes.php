@@ -63,6 +63,13 @@ return [
     'add_rack'                => 'modules/nodes_page/api/AddData/add_rack.php',
     'get_node_racks'          => 'modules/nodes_page/api/GetData/get_node_racks.php',
 
+    // ----------------------------- ПОЛЬЗОВАТЕЛИ -----------------------------
+    'get_users'               => 'modules/users/api/GetData/get_users.php',
+    'add_user'                => 'modules/users/api/AddData/add_user.php',
+    'update_user'             => 'modules/users/api/UpdateData/update_user.php',
+    'delete_user'             => 'modules/users/api/DeleteData/delete_user.php',
+    'change_password'         => 'modules/users/api/UpdateData/change_password.php',
+
     // ----------------------------- ПРОЧЕЕ -----------------------------
     // 'check_mac'              => 'api/GetData/check_mac.php',
     'search_hostname' => 'modules/nodes_page/api/GetData/search_hostname.php',

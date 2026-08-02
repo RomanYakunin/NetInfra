@@ -1,4 +1,7 @@
 <?php
+// Проверка прав: изменять данные может только администратор
+require_once dirname(__FILE__, 5) . '/includes/acl.php';
+requireAdmin();
 // api/AddData/add_column.php – добавляет новый столбец в указанную таблицу
 require_once dirname(__FILE__, 5) . '/config/db.php';
 

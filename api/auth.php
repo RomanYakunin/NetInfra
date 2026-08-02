@@ -34,7 +34,7 @@ if (password_verify($password, $user['Password'])) {
 } elseif ($password === $user['Password']) {
     // Открытый пароль – при первом входе автоматически захешируем
     $newHash = password_hash($password, PASSWORD_DEFAULT);
-    $pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?")->execute([$newHash, $user['id']]);
+    $pdo->prepare("UPDATE users SET Password = ? WHERE id = ?")->execute([$newHash, $user['id']]);
     $valid = true;
 }
 
@@ -43,13 +43,21 @@ if (!$valid) {
     exit;
 }
 
+// Заблокированным вход запрещён
+if (array_key_exists('is_active', $user) && (int)$user['is_active'] === 0) {
+    echo json_encode(['error' => 'Учётная запись заблокирована']);
+    exit;
+}
+
 // Сохраняем в сессию
 $_SESSION['user_id']   = $user['id'];
 $_SESSION['login']     = $user['Login'];
 $_SESSION['role']      = $user['Role'];
+$_SESSION['must_change_password'] = (int)($user['must_change_password'] ?? 0);
 
 echo json_encode([
     'success' => true,
     'role'    => $user['Role'],
-    'login'   => $user['Login']
+    'login'   => $user['Login'],
+    'must_change_password' => (int)($user['must_change_password'] ?? 0)
 ]);

@@ -1,4 +1,7 @@
 <?php
+// Проверка прав: изменять данные может только администратор
+require_once dirname(__FILE__, 5) . '/includes/acl.php';
+requireAdmin();
 header('Content-Type: application/json; charset=utf-8');
 $id = (int)$_POST['id'];
 $buildingId = (int)$_POST['building_id'];

@@ -1,4 +1,7 @@
 <?php
+// Проверка прав: изменять данные может только администратор
+require_once dirname(__FILE__, 5) . '/includes/acl.php';
+requireAdmin();
 // api/UpdateData/update_equipment.php – финальная версия с поддержкой PoE, сервисов, модулей и учётных данных
 if (!isset($pdo)) {
     require_once dirname(__FILE__, 5) . '/config/db.php';

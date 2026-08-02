@@ -1,4 +1,7 @@
 <?php
+// Проверка прав: изменять данные может только администратор
+require_once dirname(__FILE__, 5) . '/includes/acl.php';
+requireAdmin();
 // modules/nodes_page/api/AddData/add_rack.php – добавление шкафа (экземпляра)
 if (!isset($pdo)) {
     require_once dirname(__FILE__, 5) . '/config/db.php';

@@ -1,4 +1,7 @@
 <?php
+// Проверка прав: изменять данные может только администратор
+require_once dirname(__FILE__, 6) . '/includes/acl.php';
+requireAdmin();
 // api/AddData/add_builder.php – добавление нового здания
 require_once dirname(__FILE__, 6) . '/config/db.php';
 header('Content-Type: application/json; charset=utf-8');

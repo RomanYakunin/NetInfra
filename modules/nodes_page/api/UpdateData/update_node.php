@@ -1,4 +1,7 @@
 <?php
+// Проверка прав: изменять данные может только администратор
+require_once dirname(__FILE__, 5) . '/includes/acl.php';
+requireAdmin();
 // api/UpdateData/update_node.php – обновляет узел и его локацию
 require_once dirname(__FILE__, 5) . '/config/db.php';
 header('Content-Type: application/json; charset=utf-8');

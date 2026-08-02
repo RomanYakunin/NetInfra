@@ -315,6 +315,12 @@ function showContextMenu(x, y, items) {
     const menu = document.getElementById('ctxMenu');
     if (!menu) return;
 
+    // Права доступа: пользователю оставляем только пункты просмотра
+    if (typeof filterContextItems === 'function') {
+        items = filterContextItems(items);
+        if (!items.length) return;
+    }
+
     // 1. Если есть старый обработчик – удаляем его
     if (ctxMenuCloseHandler) {
         document.removeEventListener('click', ctxMenuCloseHandler);
