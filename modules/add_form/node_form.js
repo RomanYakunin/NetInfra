@@ -157,6 +157,31 @@ async function buildNodeForm(container, config, initialData, extraData, building
         if (field.name === 'room') {
             inLocationBlock = false;
             locationBlock = null;
+
+            // --- Блок "Шкаф(-ы)" (сворачиваемый, как в форме оборудования) ---
+            const racksSection = document.createElement('div');
+            racksSection.className = 'dossier-section';
+            racksSection.innerHTML = '<h4 onclick="toggleSection(this)"><span class="section-arrow">▶</span> 🗄️ Шкаф(-ы)</h4>';
+            const racksBody = document.createElement('div');
+            racksBody.className = 'section-body';
+            racksBody.style.display = 'none';
+            racksBody.innerHTML = `
+                <div class="rack-tile-group" id="racks-tile-group">
+                    <label class="rack-tile-label rack-tile-add">
+                        <input type="checkbox" class="rack-tile-checkbox" style="display:none;" disabled>
+                        <div class="rack-tile-content" onclick="openAddRackForm()">
+                            <div class="rack-tile-name">+</div>
+                            <div class="rack-tile-detail">Добавить</div>
+                        </div>
+                    </label>
+                </div>
+            `;
+            racksSection.appendChild(racksBody);
+            container.appendChild(racksSection);
+
+            if (initialData && (initialData.id_node || initialData.id)) {
+                loadNodeRacks(initialData.id_node || initialData.id);
+            }
         }
     }
 

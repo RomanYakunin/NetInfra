@@ -577,6 +577,13 @@ if (state.currentFormType === 'equipment' || state.currentExtraData?.force_stack
         formData.append('lldp_neighbors', JSON.stringify(lldpNeighbors));
     }
 }
+// Сбор выбранных шкафов (для формы узла)
+if (state.currentFormType === 'node') {
+    document.querySelectorAll('#racks-tile-group .rack-tile-checkbox:checked').forEach(cb => {
+        formData.append('rack_ids[]', cb.value);
+    });
+}
+
             fetch(config.url, { method: 'POST', body: formData })
                 .then(r => r.json())
                 .then(data => {

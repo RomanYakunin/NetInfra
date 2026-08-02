@@ -59,6 +59,10 @@ return [
     'add_meta'               => 'modules/nodes_page/api/AddData/add_equipment_meta.php',
     'add_column'             => 'modules/nodes_page/api/AddData/add_column.php',
 
+    // ----------------------------- ШКАФЫ -----------------------------
+    'add_rack'                => 'modules/nodes_page/api/AddData/add_rack.php',
+    'get_node_racks'          => 'modules/nodes_page/api/GetData/get_node_racks.php',
+
     // ----------------------------- ПРОЧЕЕ -----------------------------
     // 'check_mac'              => 'api/GetData/check_mac.php',
     'search_hostname' => 'modules/nodes_page/api/GetData/search_hostname.php',

@@ -35,9 +35,9 @@ $nodeId = $stmtNode->fetchColumn();
 
 // Информация о текущей стойке
 $stmtRack = $pdo->prepare("
-    SELECT r.name AS rack_name, rh.height AS rack_height
+    SELECT r.name AS rack_name, rm.height_u AS rack_height
     FROM racks r
-    LEFT JOIN rack_heights rh ON r.height_id = rh.id
+    LEFT JOIN rack_models rm ON r.model_id = rm.id
     WHERE r.id_rack = ?
 ");
 $stmtRack->execute([$rackId]);

@@ -21,28 +21,48 @@ async function showEquipmentDetails(equipId) {
 
         let html = '';
 
-        // Принадлежность к стеку (упрощённо)
-        if (eq.Groupe == 2 && eq.id_node) {
+        // Принадлежность к стеку
+        if (eq.Groupe == 2) {
+            const stackLabel = eq.stack_hostname ? `стека ${escapeHtml(eq.stack_hostname)}` : 'стека';
+            const placeLabel = eq.KY_number ? ` (КУ-${eq.KY_number})` : '';
             html += `
             <div class="dossier-section stack-info" style="background: #f0f4ff; border-color: #667eea;">
-                <h4>📦 В составе стека (узел ${eq.id_node})</h4>
+                <h4>📦 В составе ${stackLabel}${placeLabel}${eq.Slot ? ` — слот ${eq.Slot}` : ''}</h4>
             </div>`;
+        }
+
+        // Расположение: узел (КУ) или склад
+        let placement = '—';
+        if (eq.KY_number) placement = `КУ-${eq.KY_number}`;
+        else if (eq.warehouse_name) placement = `Склад: ${escapeHtml(eq.warehouse_name)}`;
+
+        // Шкаф
+        let rackLabel = '—';
+        if (eq.rack_name || eq.rack_id) {
+            rackLabel = escapeHtml(eq.rack_name || `№${eq.rack_id}`);
+            const rackExtra = [];
+            if (eq.rack_model_name) rackExtra.push(escapeHtml(eq.rack_model_name));
+            if (eq.rack_height) rackExtra.push(`${eq.rack_height}U`);
+            if (rackExtra.length) rackLabel += ` (${rackExtra.join(', ')})`;
         }
 
         // Досье
         const fields = [
-            ['Имя хоста', eq.hostname || '—'],
-            ['Тип', eq.device_type_name || '—'],
-            ['Модель', eq.model_name || '—'],
-            ['Производитель', eq.vendor_name || '—'],
-            ['Серийный номер', eq.serial_number || '—'],
-            ['MAC-адрес', eq.mac_address || '—'],
-            ['IP-адрес', ip],
-            ['Прошивка', eq.firmware_name || '—'],
-            ['Шкаф', eq.cabinet_id ? `Шкаф №${eq.cabinet_id} (${eq.cabinet_height || '—'}U)` : '—'],
-            ['Юнит', eq.unit_position || '—'],
+            ['Имя хоста', escapeHtml(eq.hostname || '—')],
+            ['Тип', escapeHtml(eq.device_type_name || '—')],
+            ['Модель', escapeHtml(eq.model_name || '—')],
+            ['Производитель', escapeHtml(eq.vendor_name || '—')],
+            ['Серийный номер', escapeHtml(eq.serial_number || '—')],
+            ['MAC-адрес', escapeHtml(eq.mac_address || '—')],
+            ['IP-адрес', escapeHtml(ip)],
+            ['PoE', eq.Poe == 1 ? 'Да' : 'Нет'],
+            ['Прошивка', escapeHtml(eq.firmware_name || '—')],
+            ['Расположение', escapeHtml(placement)],
+            ['Шкаф', rackLabel],
+            ['Юнит', escapeHtml(String(eq.unit_position || '—'))],
             ['Статус', eq.status === 'active' ? '<span class="status-badge status-ok">Активен</span>' : '<span class="status-badge status-cancelled">Неактивен</span>'],
-            ['Примечание', eq.Annotation || '—'],
+            ['Локальный админ', eq.local_admin_login ? escapeHtml(eq.local_admin_login) : '—'],
+            ['Примечание', escapeHtml(eq.Annotation || '—')],
         ];
 
         html += `
@@ -65,15 +85,16 @@ async function showEquipmentDetails(equipId) {
         <div class="module-column">
             <div class="module-column-header">🔌 SFP-модули</div>
             <div class="module-list">
-                ${(eq.modules && eq.modules.sfp && eq.modules.sfp.length > 0) 
+                ${(eq.modules && eq.modules.sfp && eq.modules.sfp.length > 0)
                     ? eq.modules.sfp.map(m => `
                         <div class="module-tile">
-                            <div class="module-name">🔌 ${m.name || 'SFP'}</div>
+                            <div class="module-name">🔌 ${escapeHtml(m.name || 'SFP')}</div>
                             <div class="module-details">
-                                ${m.type ? `<span>📡 ${m.type}</span>` : ''}
-                                ${m.serial ? `<span>🔢 ${m.serial}</span>` : ''}
-                                ${m.wavelength ? `<span>🌈 ${m.wavelength}</span>` : ''}
-                                ${m.distance ? `<span>📏 ${m.distance}</span>` : ''}
+                                ${m.type ? `<span>📡 ${escapeHtml(m.type)}</span>` : ''}
+                                ${m.serial_number ? `<span>🔢 ${escapeHtml(m.serial_number)}</span>` : ''}
+                                ${m.wavelength ? `<span>🌈 ${escapeHtml(m.wavelength)}</span>` : ''}
+                                ${m.distance ? `<span>📏 ${escapeHtml(m.distance)}</span>` : ''}
+                                ${m.port ? `<span>🔟 порт ${escapeHtml(m.port)}</span>` : ''}
                             </div>
                         </div>`).join('')
                     : '<div style="color: var(--text-secondary); padding: 0.5rem;">Нет данных</div>'}
@@ -88,11 +109,11 @@ async function showEquipmentDetails(equipId) {
                 ${(eq.modules && eq.modules.psu && eq.modules.psu.length > 0)
                     ? eq.modules.psu.map(m => `
                         <div class="module-tile">
-                            <div class="module-name">⚡ ${m.name || 'БП'}</div>
+                            <div class="module-name">⚡ ${escapeHtml(m.name || 'БП')}</div>
                             <div class="module-details">
-                                ${m.type ? `<span>📡 ${m.type}</span>` : ''}
-                                ${m.serial ? `<span>🔢 ${m.serial}</span>` : ''}
-                                ${m.status ? `<span>${m.status === 'ok' ? '✅ OK' : '⚠️ ' + m.status}</span>` : ''}
+                                ${m.type ? `<span>📡 ${escapeHtml(m.type)}</span>` : ''}
+                                ${m.serial_number ? `<span>🔢 ${escapeHtml(m.serial_number)}</span>` : ''}
+                                ${m.status ? `<span>${m.status === 'ok' ? '✅ OK' : '⚠️ ' + escapeHtml(m.status)}</span>` : ''}
                             </div>
                         </div>`).join('')
                     : '<div style="color: var(--text-secondary); padding: 0.5rem;">Нет данных</div>'}
@@ -115,6 +136,47 @@ async function showEquipmentDetails(equipId) {
             </div>`;
         });
         html += '</div></div>';
+
+        // LLDP-соседи (только просмотр, без поля ввода)
+        html += '<div class="dossier-section"><h4>📡 LLDP-соседи</h4>';
+        const neighbors = Array.isArray(eq.lldp_neighbors) ? eq.lldp_neighbors : [];
+        if (neighbors.length > 0) {
+            html += `
+            <table class="lldp-neighbors-table" style="width:100%; border-collapse:collapse;">
+                <thead>
+                    <tr>
+                        <th>Локальный порт</th>
+                        <th>Сосед</th>
+                        <th>Порт соседа</th>
+                        <th>В базе</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${neighbors.map(n => {
+                        let known = '—';
+                        if (n.remote_equipment_id) {
+                            const parts = [];
+                            if (n.remote_hostname) parts.push(escapeHtml(n.remote_hostname));
+                            if (n.remote_ip) parts.push(escapeHtml(n.remote_ip));
+                            if (n.remote_ky_number) parts.push(`КУ-${n.remote_ky_number}`);
+                            known = `<span class="status-badge status-ok">${parts.join(' · ') || 'найдено'}</span>`;
+                        } else {
+                            known = '<span class="status-badge status-update">не найдено</span>';
+                        }
+                        return `
+                        <tr>
+                            <td>${escapeHtml(n.local_port || '—')}</td>
+                            <td>${escapeHtml(n.remote_device_id || '—')}</td>
+                            <td>${escapeHtml(n.remote_port || '—')}</td>
+                            <td>${known}</td>
+                        </tr>`;
+                    }).join('')}
+                </tbody>
+            </table>`;
+        } else {
+            html += '<div style="color: var(--text-secondary); padding: 0.5rem;">Нет данных</div>';
+        }
+        html += '</div>';
 
         dossier.innerHTML = html;
         modal.dataset.equipId = equipId;

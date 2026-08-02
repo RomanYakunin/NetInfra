@@ -1047,6 +1047,7 @@ new Chart(ctx, {
 
 <!-- 4. Построитель формы узла -->
 <script src="modules/add_form/node_form.js"></script>
+<script src="modules/add_form/rack_form.js"></script>
 <script src="modules/rack_panel/rack_panel.js"></script>
 
 <!-- 5. Построитель досье оборудования (содержит buildEquipmentDossier и вспомогательные функции) -->

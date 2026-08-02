@@ -185,6 +185,132 @@
     </div>
 </div>
 
+<!-- Модальное окно добавления шкафа -->
+<div class="add-form-modal" id="addRackModal">
+    <div class="modal-content">
+        <h3>Добавить шкаф</h3>
+        <form id="addRackForm" autocomplete="off">
+            <!-- Производитель -->
+            <div class="form-group">
+                <label>Производитель</label>
+                <select name="vendor_id" id="rack-vendor-select"></select>
+            </div>
+            <!-- Модель -->
+            <div class="form-group">
+                <label>Модель</label>
+                <select name="model_id" id="rack-model-select"></select>
+            </div>
+            <!-- Имя -->
+            <div class="form-group">
+                <label>Имя шкафа</label>
+                <input type="text" name="name" class="dossier-input" required>
+            </div>
+            <div class="form-group" style="border:1px solid var(--border-color); border-radius:8px; padding:1rem; margin-bottom:1rem;">
+    <div style="font-weight:600; margin-bottom:0.8rem; color:var(--accent);">Расположение</div>
+    <div class="form-group">
+        <label>Здание</label>
+        <select name="building_id" id="rack-building-select"></select>
+    </div>
+    <div class="form-group">
+        <label>Цех</label>
+        <input type="text" name="workshop" class="dossier-input">
+    </div>
+    <div class="form-group">
+        <label>Этаж</label>
+        <input type="text" name="floor" class="dossier-input">
+    </div>
+    <div class="form-group">
+        <label>Комната</label>
+        <input type="text" name="room" class="dossier-input">
+    </div>
+</div>
+            <!-- Статус -->
+            <div class="form-group">
+                <label>Статус</label>
+                <select name="status">
+                    <option value="в эксплуатации" selected>В эксплуатации</option>
+                    <option value="на складе">На складе</option>
+                    <option value="обслуживается">Обслуживается</option>
+                    <option value="демонтирован">Демонтирован</option>
+                </select>
+            </div>
+            <!-- Примечание -->
+            <div class="form-group">
+                <label>Примечание</label>
+                <textarea name="notes" rows="2" class="dossier-input"></textarea>
+            </div>
+            <!-- Скрытые поля -->
+            <input type="hidden" name="id_node" id="rack-node-id">
+            <div class="modal-actions">
+                <button type="button" class="btn secondary" onclick="closeAddRackForm()">Отмена</button>
+                <button type="submit" class="btn">Сохранить</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Модальное окно добавления новой модели шкафа -->
+<div class="add-form-modal" id="addRackModelModal">
+    <div class="modal-content">
+        <h3>Добавить модель шкафа</h3>
+        <form id="addRackModelForm" autocomplete="off">
+            <div class="form-group">
+                <label>Производитель</label>
+                <select name="vendor_id" id="rack-model-vendor-select" required></select>
+            </div>
+            <div class="form-group">
+                <label>Название модели</label>
+                <input type="text" name="model_name" class="dossier-input" required>
+            </div>
+            <div class="form-group">
+                <label>Тип</label>
+                <select name="form_factor">
+                    <option value="напольный" selected>Напольный</option>
+                    <option value="настенный">Настенный</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Высота, U</label>
+                <input type="number" name="height_u" class="dossier-input" min="1" required>
+            </div>
+            <div class="form-group">
+                <label>Ширина, мм</label>
+                <input type="number" name="width_mm" class="dossier-input" min="1" required>
+            </div>
+            <div class="form-group">
+                <label>Глубина, мм</label>
+                <input type="number" name="depth_mm" class="dossier-input" min="1" required>
+            </div>
+            <div class="form-group">
+                <label>Тип двери</label>
+                <select name="door_type">
+                    <option value="перфорированная" selected>Перфорированная</option>
+                    <option value="стеклянная">Стеклянная</option>
+                    <option value="глухая металлическая">Глухая металлическая</option>
+                    <option value="сетчатая">Сетчатая</option>
+                    <option value="комбинированная">Комбинированная</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Класс защиты IP</label>
+                <input type="text" name="ip_rating" class="dossier-input" value="IP20">
+            </div>
+            <div class="form-group">
+                <label>Макс. нагрузка, кг</label>
+                <input type="number" name="max_load_kg" class="dossier-input" min="0">
+            </div>
+            <div class="form-group">
+                <label>Примечание</label>
+                <textarea name="notes" rows="2" class="dossier-input"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn secondary" onclick="closeAddRackModelForm()">Отмена</button>
+                <button type="submit" class="btn">Сохранить</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- Модальное окно инструкции по сервису -->
 <div class="add-form-modal" id="serviceInstructionModal">
     <div class="modal-content">
