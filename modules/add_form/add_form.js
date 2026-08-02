@@ -108,7 +108,14 @@ async function openAddForm(type, relatedId = null, initialData = null, extraData
         const hostname = extraData.stack_hostname || 'стек';
         titleEl.textContent = `Добавление устройства в стек (${hostname})`;
         } else if (extraData?.force_stack) {
-    const nodeKy = extraData.node_id ? `КУ-${extraData.node_id}` : 'узел';
+    let stackKyNumber = extraData?.ky || null;
+    if (!stackKyNumber && extraData.node_id) {
+        try {
+            const nodeInfo = await fetchJSON(`?ajax=get_node_item&id=${extraData.node_id}`);
+            stackKyNumber = nodeInfo.KY_number;
+        } catch (e) { stackKyNumber = null; }
+    }
+    const nodeKy = stackKyNumber ? `КУ-${stackKyNumber}` : (extraData.node_id ? `узел ${extraData.node_id}` : 'узел');
     titleEl.textContent = `Добавление стека в ${nodeKy}`;
     } else if (initialData) {
         if (extraData?.update_stack) {

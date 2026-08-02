@@ -91,37 +91,6 @@
     </div>
 </div>
 
-<!-- Форма добавления устройства в стек -->
-<!-- <div class="add-form-modal" id="addStackDeviceModal">
-    <div class="modal-content">
-        <h3>Добавить устройство в стек</h3>
-        <form id="addStackDeviceForm">
-            <input type="hidden" name="id_node" id="stack-node-id">
-            <input type="hidden" name="Groupe" value="2">
-            <input type="hidden" name="ip_address" id="stack-ip">
-            <input type="hidden" name="hostname" id="stack-hostname">
-            <input type="hidden" name="device_type_id" id="stack-device-type">
-            <input type="hidden" name="vendor_id" id="stack-vendor">
-            <input type="hidden" name="model_id" id="stack-model">
-
-            <div class="form-group"><label>Слот</label><input type="number" name="Slot" required min="0"></div>
-            
-            <div class="form-group"><label>Серийный номер</label><input type="text" name="serial_number"></div>
-            <div class="form-group"><label>MAC-адрес</label><input type="text" name="mac_address" class="mac-address"></div>
-            <div class="form-group"><label>Прошивка</label><select id="stack-firmware-select" name="firmware" data-add-url="api/add_firmware.php">
-    ...
-</select></div>
-            <div class="form-group"><label>Шкаф</label><select name="id_rack" id="stack-rack-select"></select></div>
-            <div class="form-group"><label>Юнит</label><input type="number" name="unit_position" min="1"></div>
-            <div class="form-group"><label>Примечание</label><textarea name="annotation" rows="5" style="height: 300px; resize: vertical;"></textarea></div>
-            <div class="modal-actions">
-                <button type="button" class="btn secondary" onclick="closeStackForm()">Отмена</button>
-                <button type="submit" class="btn">Сохранить</button>
-            </div>
-        </form>
-    </div>
-</div> -->
-
 <!-- Модальное окно настроек оповещений -->
 <div class="add-form-modal" id="alertSettingsModal">
     <div class="modal-content">

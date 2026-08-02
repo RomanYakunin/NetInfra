@@ -453,7 +453,7 @@ if ($_GET['ajax'] === 'build_stack' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         foreach ($equipment as $item) {
             $eqId = (int)$item['id'];
             $slot = (int)$item['slot'];
-            $stmt = $pdo->prepare("UPDATE equipment SET id_node = ?, warehouse_id = NULL, Groupe = 2, ip_address = ?, hostname = ?, Slot = ? WHERE id = ?");
+            $stmt = $pdo->prepare("UPDATE equipment SET id_node = ?, warehouse_id = NULL, ip_address = ?, hostname = ?, Slot = ? WHERE id = ?");
             $stmt->execute([$nodeId, $ipAddressId, $hostname, $slot, $eqId]);
         }
         $pdo->commit();

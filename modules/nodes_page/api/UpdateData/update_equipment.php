@@ -19,7 +19,7 @@ if (!$id) {
 
 // Разрешённые столбцы для обновления в таблице equipment
 $allowedCols = [
-    'Groupe', 'ip_address', 'hostname', 'Poe', 'speed', 'device_type_id', 'vendor_id',
+    'ip_address', 'hostname', 'Poe', 'speed', 'device_type_id', 'vendor_id',
     'model_id', 'serial_number', 'mac_address', 'firmwares',
     'id_rack', 'unit_position', 'id_node', 'Slot', 'Annotation',
     'warehouse_id'
@@ -68,7 +68,7 @@ if (isset($data['firmwares']) && !is_numeric($data['firmwares'])) {
 
 // Приведение числовых полей
 $intFields = [
-    'Groupe', 'ip_address', 'Poe', 'device_type_id', 'vendor_id',
+    'ip_address', 'Poe', 'device_type_id', 'vendor_id',
     'model_id', 'firmwares', 'id_rack', 'unit_position',
     'id_node', 'Slot', 'warehouse_id'
 ];

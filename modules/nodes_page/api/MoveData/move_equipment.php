@@ -51,7 +51,7 @@ if ($direction === 'another_node' && count($cleanEquipIds) === 1 && !isset($_POS
                            FROM equipment e
                            LEFT JOIN equipment_groups eg ON e.group_id = eg.id
                            LEFT JOIN ip_address ip ON e.ip_address = ip.Id
-                           WHERE e.id_node = ? AND e.Groupe = 2 AND e.group_id IS NOT NULL
+                           WHERE e.id_node = ? AND e.group_id IS NOT NULL
                            ORDER BY e.hostname");
     $stmt->execute([$destinationId]);
     $stacks = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -97,7 +97,7 @@ try {
     if ($direction === 'warehouse') {
         $placeholders = implode(',', array_fill(0, count($cleanEquipIds), '?'));
         $params = array_merge([$destinationId], $cleanEquipIds);
-        $stmt = $pdo->prepare("UPDATE equipment SET id_node = NULL, warehouse_id = ?, Groupe = 1, group_id = NULL WHERE id IN ($placeholders)");
+        $stmt = $pdo->prepare("UPDATE equipment SET id_node = NULL, warehouse_id = ?, group_id = NULL WHERE id IN ($placeholders)");
         $stmt->execute($params);
     } elseif ($direction === 'another_node') {
         if ($isAddToStack) {
@@ -125,12 +125,12 @@ try {
             }
             $placeholders = implode(',', array_fill(0, count($cleanEquipIds), '?'));
             $params = array_merge([$destinationId, $stackGroupId, $stackInfo['hostname'], $stackInfo['ip_address_id'], $slot], $cleanEquipIds);
-            $stmt = $pdo->prepare("UPDATE equipment SET id_node = ?, warehouse_id = NULL, Groupe = 2, group_id = ?, hostname = ?, ip_address = ?, Slot = ? WHERE id IN ($placeholders)");
+            $stmt = $pdo->prepare("UPDATE equipment SET id_node = ?, warehouse_id = NULL, group_id = ?, hostname = ?, ip_address = ?, Slot = ? WHERE id IN ($placeholders)");
             $stmt->execute($params);
         } else {
             $placeholders = implode(',', array_fill(0, count($cleanEquipIds), '?'));
             $params = array_merge([$destinationId], $cleanEquipIds);
-            $stmt = $pdo->prepare("UPDATE equipment SET id_node = ?, warehouse_id = NULL, Groupe = 1, group_id = NULL WHERE id IN ($placeholders)");
+            $stmt = $pdo->prepare("UPDATE equipment SET id_node = ?, warehouse_id = NULL, group_id = NULL WHERE id IN ($placeholders)");
             $stmt->execute($params);
         }
     } else {
