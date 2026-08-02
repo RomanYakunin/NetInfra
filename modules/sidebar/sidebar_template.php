@@ -62,6 +62,9 @@
             <a href="?page=users" class="nav-item <?= $page=='users' ? 'active' : '' ?>">
                 <span class="nav-icon">👥</span> <span class="nav-label">Пользователи</span>
             </a>
+            <a href="?page=journal" class="nav-item <?= $page=='journal' ? 'active' : '' ?>">
+                <span class="nav-icon">📋</span> <span class="nav-label">Журнал</span>
+            </a>
         </div>
         <?php endif; ?>
 

@@ -70,6 +70,9 @@ try {
         }
     }
 
+    require_once dirname(__FILE__, 5) . "/includes/logger.php";
+    logAction($pdo, "add_rack", "rack", $newId, $name, ["model_id" => $modelId, "id_node" => $nodeId]);
+
     echo json_encode(['success' => true, 'id' => $newId, 'name' => $name, 'detail' => $detail]);
 } catch (PDOException $e) {
     echo json_encode(['success' => false, 'error' => 'Ошибка БД: ' . $e->getMessage()]);

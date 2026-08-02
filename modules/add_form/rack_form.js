@@ -240,8 +240,10 @@ function addRackTile(rackId, rackName, checked = false, detail = 'шкаф') {
 async function loadNodeRacks(nodeId) {
     const group = document.getElementById('racks-tile-group');
     if (!group) return;
-    // Очищаем существующие плитки (кроме кнопки добавления)
-    group.querySelectorAll('.rack-tile-label').forEach(el => el.remove());
+    // Очищаем существующие плитки, НО НЕ трогаем плитку «+ Добавить шкаф»:
+    // у неё тоже класс rack-tile-label, поэтому обязательно исключаем
+    // .rack-tile-add — иначе кнопка «+» пропадала при редактировании узла.
+    group.querySelectorAll('.rack-tile-label:not(.rack-tile-add)').forEach(el => el.remove());
     try {
         const resp = await fetch(`?ajax=get_node_racks&node_id=${nodeId}`);
         const racks = await resp.json();

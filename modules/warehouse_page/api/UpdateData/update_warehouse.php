@@ -31,6 +31,9 @@ try {
     $bStmt->execute([$buildingId]);
     $buildingName = $bStmt->fetchColumn();
 
+    require_once dirname(__FILE__, 5) . "/includes/logger.php";
+    logAction($pdo, "edit_warehouse", "warehouse", $id ?? null, $name);
+
     echo json_encode(['success' => true, 'new_name' => $name, 'building_name' => $buildingName]);
 } catch (PDOException $e) {
     echo json_encode(['success' => false, 'error' => 'Ошибка БД']);

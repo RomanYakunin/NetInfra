@@ -55,6 +55,10 @@ $_SESSION['login']     = $user['Login'];
 $_SESSION['role']      = $user['Role'];
 $_SESSION['must_change_password'] = (int)($user['must_change_password'] ?? 0);
 
+// Журналируем успешный вход (сессия уже заполнена — logAction возьмёт данные из неё)
+require_once dirname(__FILE__, 2) . '/includes/logger.php';
+logAction($pdo, 'login', 'user', $user['id'], $user['Login'], 'Успешный вход в систему');
+
 echo json_encode([
     'success' => true,
     'role'    => $user['Role'],

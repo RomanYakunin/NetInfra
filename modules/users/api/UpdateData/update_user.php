@@ -99,6 +99,10 @@ try {
     $params[] = $id;
     $pdo->prepare("UPDATE users SET " . implode(', ', $fields) . " WHERE id = ?")->execute($params);
 
+    require_once dirname(__FILE__, 5) . "/includes/logger.php";
+    logAction($pdo, 'edit_user', 'user', $id, $user['Login'] ?? '',
+        !empty($_POST['password']) ? 'Смена пароля и настроек' : $fields);
+
     echo json_encode(['success' => true]);
 } catch (PDOException $e) {
     echo json_encode(['error' => 'Ошибка БД: ' . $e->getMessage()]);

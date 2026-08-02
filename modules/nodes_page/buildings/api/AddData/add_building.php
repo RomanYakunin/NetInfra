@@ -30,6 +30,11 @@ try {
     $stmt = $pdo->prepare("INSERT INTO Buildings (Name_Building) VALUES (?)");
     $stmt->execute([$name]);
     $newId = $pdo->lastInsertId();
+
+    // Журналируем создание здания
+    require_once dirname(__FILE__, 6) . '/includes/logger.php';
+    logAction($pdo, 'add_building', 'building', $newId, $name);
+
     echo json_encode(['success' => true, 'id' => $newId, 'name' => $name]);
 } catch (PDOException $e) {
     echo json_encode(['error' => 'db', 'message' => 'Ошибка добавления: ' . $e->getMessage()]);

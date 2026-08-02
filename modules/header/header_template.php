@@ -8,6 +8,7 @@ $pageTitles = [
     'dashboard'        => '📊 Дашборд',
     'database_manager' => '🗄️ База знаний',
     'users'            => '👥 Пользователи',
+    'journal'          => '📋 Журнал действий',
     'phones'           => '📞 Телефоны',
 ];
 $pageTitle = $pageTitles[$page ?? ''] ?? 'NetInfra Manager';

@@ -64,6 +64,12 @@ try {
         $pdo->prepare("UPDATE racks SET id_node = NULL WHERE id_node = ?")->execute([$id]);
     }
 
+    // Журналируем изменение узла
+    require_once dirname(__FILE__, 5) . '/includes/logger.php';
+    logAction($pdo, 'edit_node', 'node', $id,
+        ($_POST['KY_number'] ?? '') !== '' ? 'КУ-' . $_POST['KY_number'] : 'без номера КУ',
+        ['KY_number' => $_POST['KY_number'] ?? null, 'rack_ids' => $rackIds ?? []]);
+
     echo json_encode(['success' => true, 'id_node' => $id]);
 } catch (PDOException $e) {
     echo json_encode(['error' => 'Ошибка обновления: ' . $e->getMessage()]);

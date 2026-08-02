@@ -45,6 +45,9 @@ try {
     }
 
     $pdo->prepare("DELETE FROM users WHERE id = ?")->execute([$id]);
+    require_once dirname(__FILE__, 5) . "/includes/logger.php";
+    logAction($pdo, "delete_user", "user", $id, "");
+
     echo json_encode(['success' => true]);
 } catch (PDOException $e) {
     echo json_encode(['error' => 'Ошибка БД: ' . $e->getMessage()]);

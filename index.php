@@ -7,6 +7,12 @@ session_start();
 
 // Выход
 if (isset($_GET['logout'])) {
+    // Журналируем выход ДО уничтожения сессии, иначе данные пользователя потеряются
+    if (isset($_SESSION['user_id'])) {
+        require_once __DIR__ . '/config/db.php';
+        require_once __DIR__ . '/includes/logger.php';
+        logAction($pdo, 'logout', 'user', $_SESSION['user_id'], $_SESSION['login'] ?? '', 'Выход из системы');
+    }
     session_destroy();
     header('Location: /');
     exit;
@@ -506,7 +512,7 @@ $page = $_GET['page'] ?? 'nodes';
 require_once 'modules/header/header.php';
 
 // Страницы, доступные только администратору
-$adminOnlyPages = ['users', 'database_manager'];
+$adminOnlyPages = ['users', 'database_manager', 'journal'];
 if (in_array($page, $adminOnlyPages, true) && ($_SESSION['role'] ?? '') !== 'admin') {
     $error = 'Доступ запрещён: страница доступна только администратору';
     $page = 'forbidden';
@@ -531,6 +537,9 @@ switch ($page) {
         break;
     case 'users':
         require_once 'modules/users/users.php';
+        break;
+    case 'journal':
+        require_once 'modules/journal/journal.php';
         break;
     case 'forbidden':
         // $error уже установлен выше
@@ -764,6 +773,9 @@ switch ($page) {
                         break;
                     case 'database_manager':
                         include 'modules/knowledge_base/knowledge_base_template.php';
+                        break;
+                    case 'journal':
+                        include 'modules/journal/journal_template.php';
                         break;
                 }
     ?>

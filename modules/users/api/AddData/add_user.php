@@ -44,7 +44,14 @@ try {
     $stmt = $pdo->prepare("INSERT INTO users (Login, Password, Role, must_change_password, is_active) VALUES (?, ?, ?, ?, 1)");
     $stmt->execute([$login, $hash, $role, $mustChange]);
 
-    echo json_encode(['success' => true, 'id' => (int)$pdo->lastInsertId()]);
+    // ID берём ДО записи в журнал: logAction делает свой INSERT,
+    // после которого lastInsertId() вернул бы id строки журнала
+    $newUserId = (int)$pdo->lastInsertId();
+
+    require_once dirname(__FILE__, 5) . "/includes/logger.php";
+    logAction($pdo, 'add_user', 'user', $newUserId, $login, ['role' => $role]);
+
+    echo json_encode(['success' => true, 'id' => $newUserId]);
 } catch (PDOException $e) {
     echo json_encode(['error' => 'Ошибка БД: ' . $e->getMessage()]);
 }

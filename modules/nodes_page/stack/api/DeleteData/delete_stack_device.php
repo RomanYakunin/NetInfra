@@ -36,6 +36,10 @@ try {
     // Сбросить group_id и очистить hostname (устройство остаётся как одиночное)
     $pdo->prepare("UPDATE equipment SET group_id = NULL, hostname = '' WHERE id = ?")->execute([$id]);
 
+    require_once dirname(__FILE__, 6) . '/includes/logger.php';
+    logAction($pdo, 'delete_stack_device', 'stack', $id,
+        $device['stack_hostname'] ?? '', 'Устройство выведено из стека');
+
     echo json_encode([
         'success' => true,
         'mac_address' => $device['mac_address'] ?? '',

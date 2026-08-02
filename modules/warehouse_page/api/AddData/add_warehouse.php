@@ -23,7 +23,13 @@ if (empty($buildingId) || empty($name)) {
 try {
     $stmt = $pdo->prepare("INSERT INTO warehouses (building, name) VALUES (?, ?)");
     $stmt->execute([$buildingId, $name]);
-    echo json_encode(['success' => true, 'id' => $pdo->lastInsertId()]);
+    $newId = $pdo->lastInsertId();
+
+    // Журналируем создание склада
+    require_once dirname(__FILE__, 5) . '/includes/logger.php';
+    logAction($pdo, 'add_warehouse', 'warehouse', $newId, $name);
+
+    echo json_encode(['success' => true, 'id' => $newId]);
 } catch (PDOException $e) {
     echo json_encode(['error' => 'Ошибка добавления: ' . $e->getMessage()]);
 }

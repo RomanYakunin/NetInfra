@@ -35,6 +35,9 @@ try {
 
     $stmt = $pdo->prepare("UPDATE Buildings SET Name_Building = ? WHERE Id = ?");
     $stmt->execute([$name, $id]);
+    require_once dirname(__FILE__, 6) . "/includes/logger.php";
+    logAction($pdo, "edit_building", "building", $id, $name, ["old_name" => $oldName]);
+
     echo json_encode(['success' => true, 'id' => $id, 'name' => $name, 'old_name' => $oldName]);
 } catch (PDOException $e) {
     echo json_encode(['error' => 'db', 'message' => 'Ошибка обновления: ' . $e->getMessage()]);

@@ -1,0 +1,159 @@
+/* modules/journal/journal.css — страница «Журнал» */
+
+.journal-page { padding: 1rem; }
+
+/* ---------- Фильтры ---------- */
+.journal-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    align-items: flex-end;
+    margin-bottom: 1rem;
+    padding: 0.8rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 0.6rem;
+}
+.journal-filter { display: flex; flex-direction: column; gap: 0.2rem; }
+.journal-filter-grow { flex: 1 1 220px; }
+.journal-filter label {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+.journal-filter input,
+.journal-filter select {
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.35rem;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-family: inherit;
+}
+.journal-filter input:focus,
+.journal-filter select:focus { outline: none; border-color: var(--accent); }
+
+/* ---------- Таблица ---------- */
+.journal-table-wrapper {
+    overflow-x: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    background: var(--bg-card);
+    max-height: calc(100vh - 22rem);
+    overflow-y: auto;
+}
+.journal-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.83rem;
+}
+.journal-table thead th {
+    padding: 0.5rem 0.7rem;
+    text-align: left;
+    background: var(--bg-header);
+    border-bottom: 2px solid var(--border-color);
+    color: var(--text-secondary);
+    font-weight: 600;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+.journal-table tbody td {
+    padding: 0.42rem 0.7rem;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+    vertical-align: top;
+}
+.journal-row { cursor: pointer; transition: background 0.15s ease; }
+.journal-row:hover { background: var(--table-hover, rgba(128,128,128,0.08)); }
+
+.journal-nowrap { white-space: nowrap; }
+.journal-muted { color: var(--text-secondary); }
+.journal-error { color: var(--danger); }
+.journal-action-icon { margin-right: 0.2rem; }
+
+.journal-details {
+    max-width: 340px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+}
+
+.journal-empty {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--text-secondary);
+}
+
+/* ---------- Пагинация ---------- */
+.journal-pagination {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.7rem;
+    flex-wrap: wrap;
+}
+.journal-pagination .page-info {
+    margin-right: 0.6rem;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+.journal-pagination .page-controls { display: flex; align-items: center; gap: 0.25rem; flex-wrap: wrap; }
+.journal-pagination .page-btn {
+    min-width: 2rem;
+    padding: 0.3rem 0.55rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.3rem;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-family: inherit;
+}
+.journal-pagination .page-btn:hover:not(:disabled) { border-color: var(--accent); }
+.journal-pagination .page-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 600;
+}
+.journal-pagination .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.journal-pagination .page-gap { color: var(--text-secondary); padding: 0 0.2rem; }
+.journal-pagination .page-current {
+    margin-left: 0.5rem;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+/* ---------- Карточка записи ---------- */
+.journal-detail { max-height: 60vh; overflow-y: auto; }
+.journal-detail-list {
+    display: grid;
+    grid-template-columns: minmax(9rem, auto) 1fr;
+    gap: 0.3rem 0.8rem;
+    margin: 0 0 0.8rem;
+    font-size: 0.85rem;
+}
+.journal-detail-list dt { color: var(--text-secondary); }
+.journal-detail-list dd { margin: 0; color: var(--text-primary); word-break: break-word; }
+.journal-detail-title {
+    font-weight: 600;
+    color: var(--accent);
+    margin: 0.6rem 0 0.4rem;
+    font-size: 0.9rem;
+}
+.journal-detail-raw {
+    background: var(--table-hover, rgba(128,128,128,0.08));
+    border: 1px solid var(--border-color);
+    border-radius: 0.35rem;
+    padding: 0.6rem;
+    font-size: 0.78rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin: 0;
+    color: var(--text-primary);
+}

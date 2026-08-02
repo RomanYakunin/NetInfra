@@ -213,6 +213,9 @@ try {
     }
 
     $pdo->commit();
+    require_once dirname(__FILE__, 5) . "/includes/logger.php";
+    logAction($pdo, "add_equipment", "equipment", $newId, $data["hostname"] ?? "", ["id_node" => $data["id_node"] ?? null]);
+
     echo json_encode(['success' => true, 'id' => $newId, 'id_node' => $data['id_node'] ?? null]);
 
 } catch (PDOException $e) {

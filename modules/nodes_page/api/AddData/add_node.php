@@ -56,6 +56,12 @@ try {
         $stmt->execute(array_merge([$newId, $locationId], $rackIds));
     }
 
+    // Журналируем создание узла
+    require_once dirname(__FILE__, 5) . '/includes/logger.php';
+    logAction($pdo, 'add_node', 'node', $newId,
+        ($_POST['KY_number'] ?? '') !== '' ? 'КУ-' . $_POST['KY_number'] : 'без номера КУ',
+        ['KY_number' => $_POST['KY_number'] ?? null, 'building_id' => $_POST['building_id'] ?? null]);
+
     echo json_encode(['success' => true, 'id' => $newId, 'message' => 'Узел успешно добавлен']);
 } catch (PDOException $e) {
     echo json_encode(['error' => 'Ошибка добавления: ' . $e->getMessage()]);

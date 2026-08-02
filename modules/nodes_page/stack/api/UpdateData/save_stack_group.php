@@ -43,6 +43,9 @@ try {
     }
 
     $pdo->commit();
+    require_once dirname(__FILE__, 6) . "/includes/logger.php";
+    logAction($pdo, "edit_stack", "stack", $groupId, $hostname ?? "", ["node_id" => $nodeId ?? null]);
+
     echo json_encode(['success' => true, 'group_id' => $groupId]);
 } catch (PDOException $e) {
     $pdo->rollBack();

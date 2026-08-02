@@ -215,6 +215,9 @@ try {
     }
 
     $pdo->commit();
+    require_once dirname(__FILE__, 5) . "/includes/logger.php";
+    logAction($pdo, "edit_equipment", "equipment", $id, $data["hostname"] ?? "", $data);
+
     echo json_encode(['success' => true]);
 } catch (PDOException $e) {
     $pdo->rollBack();

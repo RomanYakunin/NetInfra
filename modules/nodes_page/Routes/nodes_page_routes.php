@@ -74,6 +74,10 @@ return [
     'kb_update_row'           => 'modules/knowledge_base/api/kb_update_row.php',
     'kb_delete_row'           => 'modules/knowledge_base/api/kb_delete_row.php',
 
+    // ----------------------------- ЖУРНАЛ ДЕЙСТВИЙ -----------------------------
+    'get_logs'                => 'modules/journal/api/get_logs.php',
+    'get_log_detail'          => 'modules/journal/api/get_log_detail.php',
+
     // ----------------------------- ПОЛЬЗОВАТЕЛИ -----------------------------
     'get_users'               => 'modules/users/api/GetData/get_users.php',
     'add_user'                => 'modules/users/api/AddData/add_user.php',

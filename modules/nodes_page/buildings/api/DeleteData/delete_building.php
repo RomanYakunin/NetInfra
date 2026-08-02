@@ -32,10 +32,17 @@ try {
         exit;
     }
 
+    // Название запоминаем до удаления — для журнала
+    $stmtName = $pdo->prepare("SELECT Name_Building FROM Buildings WHERE Id = ?");
+    $stmtName->execute([$buildingId]);
+    $buildingName = $stmtName->fetchColumn() ?: '';
+
     $stmt = $pdo->prepare("DELETE FROM Buildings WHERE Id = ?");
     $stmt->execute([$buildingId]);
 
     if ($stmt->rowCount() > 0) {
+        require_once dirname(__FILE__, 6) . '/includes/logger.php';
+        logAction($pdo, 'delete_building', 'building', $buildingId, $buildingName);
         echo json_encode(['success' => true]);
     } else {
         echo json_encode(['error' => 'Здание не найдено']);
