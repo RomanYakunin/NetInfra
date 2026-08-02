@@ -8,6 +8,7 @@
         <div class="modal-actions">
             <button class="btn secondary" onclick="closeEquipmentDetails()">Закрыть</button>
             <button class="btn secondary" id="detailsHistoryBtn" onclick="openEquipmentHistory()">📜 История изменений</button>
+            <button class="btn secondary" id="detailsSnmpBtn" onclick="openSnmpModal()" style="display:none;">📡 SNMP-запросы</button>
             <button class="btn" id="detailsEditBtn" onclick="editCurrentEquipment()" style="display:none;">Редактировать</button>
         </div>
     </div>

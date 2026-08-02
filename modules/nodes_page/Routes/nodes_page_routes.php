@@ -63,6 +63,7 @@ return [
     'add_rack'                => 'modules/nodes_page/api/AddData/add_rack.php',
     'get_node_racks'          => 'modules/nodes_page/api/GetData/get_node_racks.php',
     'get_equipment_lldp'      => 'modules/nodes_page/api/GetData/get_equipment_lldp.php',
+    'snmp_query'              => 'modules/nodes_page/api/GetData/snmp_query.php',
 
     // ----------------------------- БАЗА ЗНАНИЙ (управление таблицами БД) -----------------------------
     'kb_get_tables'           => 'modules/knowledge_base/api/kb_get_tables.php',

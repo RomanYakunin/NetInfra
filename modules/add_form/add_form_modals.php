@@ -338,3 +338,74 @@
         </div>
     </div>
 </div>
+<!-- Модальное окно SNMP-опроса оборудования -->
+<div class="add-form-modal" id="snmpModal">
+    <div class="modal-content wide" style="max-width: 860px;">
+        <h3 id="snmpTitle">📡 SNMP-запросы</h3>
+
+        <div class="snmp-toolbar">
+            <div class="form-group">
+                <label>IP-адрес</label>
+                <input type="text" id="snmpIp" class="dossier-input" readonly>
+            </div>
+            <div class="form-group">
+                <label>Запрос</label>
+                <select id="snmpQueryType" class="dossier-select">
+                    <option value="sysName">Системное имя (sysName)</option>
+                    <option value="sysDescr">Описание системы (sysDescr)</option>
+                    <option value="serial">Серийный номер</option>
+                    <option value="mac">MAC-адрес</option>
+                    <option value="ports_status">Активность портов</option>
+                    <option value="ports">Конфигурация портов</option>
+                    <option value="lldp">LLDP-соседи</option>
+                    <option value="all">Все данные (полный обход)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Версия</label>
+                <select id="snmpVersion" class="dossier-select">
+                    <option value="2c">SNMP v2c</option>
+                    <option value="3">SNMP v3</option>
+                </select>
+            </div>
+            <div class="form-group" id="snmpCommunityGroup">
+                <label>Community</label>
+                <input type="text" id="snmpCommunity" class="dossier-input" value="public">
+            </div>
+            <div class="form-group">
+                <label>&nbsp;</label>
+                <button type="button" class="btn" id="snmpRunBtn">Подгрузить</button>
+            </div>
+        </div>
+
+        <!-- Блок учётных данных: показывается для v3 либо когда сервер
+             сообщил, что подставленные логин/пароль не подошли -->
+        <div class="snmp-credentials" id="snmpCredentials" style="display:none;">
+            <div class="snmp-credentials-hint" id="snmpCredentialsHint">
+                Введите учётные данные для доступа к устройству
+            </div>
+            <div class="snmp-toolbar">
+                <div class="form-group">
+                    <label>Логин</label>
+                    <input type="text" id="snmpUser" class="dossier-input" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label>Пароль</label>
+                    <input type="password" id="snmpPassword" class="dossier-input" autocomplete="new-password">
+                </div>
+                <div class="form-group">
+                    <label>&nbsp;</label>
+                    <button type="button" class="btn" id="snmpGoBtn">Вперёд</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="snmp-result" id="snmpResult">
+            <div class="snmp-placeholder">Выберите запрос и нажмите «Подгрузить»</div>
+        </div>
+
+        <div class="modal-actions">
+            <button type="button" class="btn secondary" onclick="closeSnmpModal()">Закрыть</button>
+        </div>
+    </div>
+</div>

@@ -180,7 +180,15 @@ async function showEquipmentDetails(equipId) {
 
         dossier.innerHTML = html;
         modal.dataset.equipId = equipId;
+        // Контекст для SNMP-опроса: IP и производитель берём из загруженных данных
+        // IP приходит как ip_address_display («—», если не задан)
+        modal.dataset.equipIp = (ip && ip !== '—') ? ip : '';
+        modal.dataset.equipVendor = eq.vendor_name || '';
         document.getElementById('detailsEditBtn').style.display = 'inline-block';
+
+        // Кнопка SNMP имеет смысл только при заданном IP-адресе
+        const snmpBtn = document.getElementById('detailsSnmpBtn');
+        if (snmpBtn) snmpBtn.style.display = modal.dataset.equipIp ? 'inline-block' : 'none';
 
     } catch (err) {
         dossier.innerHTML = '<div class="alert alert-danger">Ошибка загрузки данных</div>';
@@ -371,4 +379,133 @@ function editCurrentEquipment() {
             });
         });
     }
+})();
+
+/* ============================================================
+   SNMP-опрос оборудования (кнопка «📡 SNMP-запросы» в досье).
+   Результат нигде не сохраняется — только показывается в окне.
+   ============================================================ */
+(function () {
+    'use strict';
+
+    let snmpCtx = { ip: '', equipmentId: null, vendor: '' };
+
+    /**
+     * Открывает окно SNMP-опроса. Данные берутся из текущей карточки досье.
+     */
+    window.openSnmpModal = function (ip, equipmentId, vendor) {
+        const detailsModal = document.getElementById('equipmentDetailsModal');
+        snmpCtx.ip = ip || detailsModal?.dataset.equipIp || '';
+        snmpCtx.equipmentId = equipmentId || detailsModal?.dataset.equipId || null;
+        snmpCtx.vendor = vendor || detailsModal?.dataset.equipVendor || '';
+
+        if (!snmpCtx.ip) {
+            if (typeof showToast === 'function') showToast('У оборудования не указан IP-адрес', 'warning');
+            return;
+        }
+
+        const modal = document.getElementById('snmpModal');
+        if (!modal) return;
+
+        document.getElementById('snmpIp').value = snmpCtx.ip;
+        document.getElementById('snmpResult').innerHTML =
+            '<div class="snmp-placeholder">Выберите запрос и нажмите «Подгрузить»</div>';
+        document.getElementById('snmpCredentials').style.display = 'none';
+        document.getElementById('snmpUser').value = '';
+        document.getElementById('snmpPassword').value = '';
+        syncSnmpVersionFields();
+
+        if (typeof showModal === 'function') showModal(modal);
+        else modal.classList.add('visible');
+    };
+
+    window.closeSnmpModal = function () {
+        const modal = document.getElementById('snmpModal');
+        if (!modal) return;
+        modal.classList.remove('visible');
+        // Сбрасываем поля: пароль не должен оставаться в DOM
+        document.getElementById('snmpUser').value = '';
+        document.getElementById('snmpPassword').value = '';
+        document.getElementById('snmpCredentials').style.display = 'none';
+        document.getElementById('snmpResult').innerHTML =
+            '<div class="snmp-placeholder">Выберите запрос и нажмите «Подгрузить»</div>';
+    };
+
+    /** v2c — community, v3 — логин/пароль. */
+    function syncSnmpVersionFields() {
+        const version = document.getElementById('snmpVersion')?.value || '2c';
+        const commGroup = document.getElementById('snmpCommunityGroup');
+        const creds = document.getElementById('snmpCredentials');
+        if (commGroup) commGroup.style.display = version === '2c' ? '' : 'none';
+        if (creds && version === '3') {
+            creds.style.display = '';
+            document.getElementById('snmpCredentialsHint').textContent =
+                'SNMPv3: логин и пароль подставятся из базы, либо введите их вручную';
+        } else if (creds && version === '2c') {
+            creds.style.display = 'none';
+        }
+    }
+
+    /** Выполняет запрос и рисует результат. */
+    async function runSnmp(withManualCredentials) {
+        const btn = withManualCredentials
+            ? document.getElementById('snmpGoBtn')
+            : document.getElementById('snmpRunBtn');
+        const box = document.getElementById('snmpResult');
+        const version = document.getElementById('snmpVersion').value;
+
+        const params = {
+            ip_address:   snmpCtx.ip,
+            equipment_id: snmpCtx.equipmentId,
+            vendor:       snmpCtx.vendor,
+            query_type:   document.getElementById('snmpQueryType').value,
+            version:      version
+        };
+        if (version === '2c') {
+            params.community = document.getElementById('snmpCommunity').value.trim() || 'public';
+        }
+        // Введённые вручную учётные данные (в браузере не сохраняются)
+        const user = document.getElementById('snmpUser').value.trim();
+        const pass = document.getElementById('snmpPassword').value;
+        if (user) { params.snmp_user = user; params.snmp_password = pass; }
+
+        const oldLabel = btn ? btn.textContent : '';
+        if (btn) { btn.disabled = true; btn.textContent = 'Опрос…'; }
+        box.innerHTML = '<div class="snmp-placeholder">Опрашиваем устройство…</div>';
+
+        try {
+            const data = await doSnmpQuery(params);
+
+            if (data.error) {
+                box.innerHTML = `<div class="snmp-placeholder snmp-error">${data.error}</div>`;
+                if (typeof showToast === 'function') showToast(data.error, 'error');
+
+                // Не подошли учётные данные или их нет — предлагаем ввести вручную
+                if (data.auth_failed || data.need_credentials) {
+                    const creds = document.getElementById('snmpCredentials');
+                    if (creds) {
+                        creds.style.display = '';
+                        document.getElementById('snmpCredentialsHint').textContent =
+                            data.auth_failed
+                                ? 'Логин и пароль не подошли. Введите другие и нажмите «Вперёд».'
+                                : 'Введите логин и пароль и нажмите «Вперёд».';
+                        document.getElementById('snmpUser').focus();
+                    }
+                }
+                return;
+            }
+
+            renderSnmpResult(box, data);
+        } catch (e) {
+            box.innerHTML = '<div class="snmp-placeholder snmp-error">Ошибка сети при обращении к серверу</div>';
+        } finally {
+            if (btn) { btn.disabled = false; btn.textContent = oldLabel; }
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('snmpRunBtn')?.addEventListener('click', () => runSnmp(false));
+        document.getElementById('snmpGoBtn')?.addEventListener('click', () => runSnmp(true));
+        document.getElementById('snmpVersion')?.addEventListener('change', syncSnmpVersionFields);
+    });
 })();

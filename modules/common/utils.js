@@ -259,3 +259,63 @@ function closeModalAndReset(modalId, options = {}) {
     modal.style.display = '';
     resetModalForm(modal, options);
 }
+
+/**
+ * Универсальный вызов SNMP-опроса.
+ * Ничего не сохраняет: сервер возвращает разобранные строки для таблицы.
+ *
+ * @param {Object} params { ip_address, query_type, version, community,
+ *                          vendor, equipment_id, snmp_user, snmp_password }
+ * @returns {Promise<Object>} ответ сервера как есть
+ */
+async function doSnmpQuery(params) {
+    const fd = new FormData();
+    Object.keys(params).forEach(k => {
+        if (params[k] !== undefined && params[k] !== null && params[k] !== '') {
+            fd.append(k, params[k]);
+        }
+    });
+    const resp = await fetch('?ajax=snmp_query', { method: 'POST', body: fd });
+    return resp.json();
+}
+
+/**
+ * Рисует таблицу результата SNMP-опроса в указанный контейнер.
+ * @param {HTMLElement} box
+ * @param {Object} data ответ doSnmpQuery
+ */
+function renderSnmpResult(box, data) {
+    if (!box) return;
+    const esc = (s) => {
+        const d = document.createElement('div');
+        d.textContent = s === null || s === undefined ? '' : s;
+        return d.innerHTML;
+    };
+
+    if (!data.rows || !data.rows.length) {
+        box.innerHTML = '<div class="snmp-placeholder">Устройство не вернуло данных по этому запросу</div>';
+        return;
+    }
+
+    let html = `<div class="snmp-result-head">${esc(data.label || '')} — записей: ${data.count}`
+             + (data.oid ? ` <span class="snmp-oid">OID ${esc(data.oid)}</span>` : '') + '</div>';
+    html += '<div class="snmp-table-wrapper"><table class="snmp-table"><thead><tr>';
+    (data.columns || []).forEach(c => { html += `<th>${esc(c)}</th>`; });
+    html += '</tr></thead><tbody>';
+
+    data.rows.forEach(row => {
+        html += '<tr>';
+        row.forEach((cell, i) => {
+            // Состояние порта подкрашиваем: колонка «Состояние» во втором столбце
+            let cls = '';
+            if (i === 1 && typeof cell === 'string') {
+                if (cell === 'Активен') cls = ' class="snmp-up"';
+                else if (cell === 'Не активен' || cell === 'Нет несущей') cls = ' class="snmp-down"';
+            }
+            html += `<td${cls}>${esc(cell)}</td>`;
+        });
+        html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+    box.innerHTML = html;
+}
