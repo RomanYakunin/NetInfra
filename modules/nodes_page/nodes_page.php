@@ -86,7 +86,7 @@ if ($buildingFilter > 0) {
     $params[] = $buildingFilter;
 }
 
-$sql = "SELECT " . implode(', ', $selectParts) . " FROM nodes n " . implode(' ', $joins) . $where;
+$sql = "SELECT " . implode(', ', $selectParts) . " FROM nodes n " . implode(' ', $joins) . $where . " ORDER BY n.KY_number IS NULL, n.KY_number ASC";
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $nodes = $stmt->fetchAll();

@@ -157,12 +157,6 @@ if (isset($routes[$action])) {
     exit;
 }
 
-
-    // Запрос оборудования узла
-    // if ($_GET['ajax'] === 'get_equipment' && isset($_GET['node_id'])) {
-    //     require_once 'modules/nodes_page/api/GetData/get_equipment.php';
-    //     exit;
-    // }
     
     // Удаление оборудования
 if ($_GET['ajax'] === 'delete_equipment' && $_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -258,10 +252,6 @@ if ($_GET['ajax'] === 'get_warehouse_equipment_for_stack') {
     exit;
 }
 
-// if ($_GET['ajax'] === 'get_node_equipment_for_move' && isset($_GET['node_id'])) {
-//     require_once 'modules/nodes_page/api/GetData/get_node_equipment_for_move.php';
-//     exit;
-// }
 
 
 
@@ -278,60 +268,7 @@ if ($_GET['ajax'] === 'delete_node' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-//     if ($_GET['ajax'] === 'get_building_item' && isset($_GET['id'])) {
-//     require_once 'modules/nodes_page/buildings/api/GetData/get_building_item.php';
-//     exit;
-// }
-// if ($_GET['ajax'] === 'update_building' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-//     require_once 'modules/nodes_page/buildings/api/UpdateData/update_building.php';
-//     exit;
-// }
-// if ($_GET['ajax'] === 'delete_building' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-//     require_once 'modules/nodes_page/buildings/api/DeleteData/delete_building.php';
-//     exit;
-// }
 
-    // Запрос справочников (списков для селектов)
-//     if ($_GET['ajax'] === 'get_list' && isset($_GET['list'])) {
-//     header('Content-Type: application/json; charset=utf-8');
-//     $list = $_GET['list'];
-//     $allowed = [
-//         'device_types'   => ['table' => 'device_types',   'id' => 'id_type_device', 'name' => 'name'],
-//         'vendors'        => ['table' => 'vendors',        'id' => 'id_vendor',      'name' => 'name'],
-//         'device_models'  => ['table' => 'device_models',  'id' => 'id',             'name' => 'name', 'extra' => 'Vendor'],
-//         'racks'       => ['table' => 'racks',       'id' => 'id_rack',     'name' => 'id_rack'],
-//         'rack_heights'=> ['table' => 'rack_heights','id' => 'id',             'name' => 'height'],
-//         'Type_group'     => ['table' => 'Type_group',     'id' => 'Id',             'name' => 'Type_group'],
-//         'firmwares'      => ['table' => 'firmwares',      'id' => 'id_firmware',    'name' => 'name'],
-//         'ip_address'     => ['table' => 'ip_address',     'id' => 'Id',             'name' => 'ip_address'],
-//         'node_types'     => ['table' => 'node_types',     'id' => 'id_node_type',   'name' => 'name_node_type'],
-//     ];
-
-//     if (!isset($allowed[$list])) {
-//         echo json_encode(['error' => 'Invalid list', 'data' => []]);
-//         exit;
-//     }
-//     if (isset($_GET['ajax']) && $_GET['ajax'] === 'check_mac_unique') {
-//     // Подавляем случайный вывод ошибок, чтобы JSON был чистым
-//     ini_set('display_errors', 0);
-//     error_reporting(0);
-//     ob_clean(); // очищаем буфер вывода
-//     require_once __DIR__ . '/modules/nodes_page/ajax/check_mac_unique.php';
-//     exit;
-// }
-
-//     $config = $allowed[$list];
-//     $data = [];
-//     try {
-//         $stmt = $pdo->query("SELECT {$config['id']} AS id, {$config['name']} AS name FROM {$config['table']} ORDER BY name");
-//         $data = $stmt->fetchAll();
-//     } catch (PDOException $e) {
-//         // оставляем пустой массив
-//     }
-
-//     echo json_encode(['data' => $data, 'list_name' => $list]);
-//     exit;
-// }
 if ($_GET['ajax'] === 'get_rack' && isset($_GET['equipment_id'])) {
     require_once 'modules/nodes_page/api/GetData/get_rack.php';
     exit;
@@ -344,97 +281,19 @@ if ($_GET['ajax'] === 'get_equipment_details' && isset($_GET['id'])) {
     require_once 'modules/nodes_page/equipment_details/equipment_details.php';
     exit;
 }
-// if ($_GET['ajax'] === 'save_stack_device' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-//     require_once 'modules/nodes_page/stack/api/AddData/save_stack_device.php';
-//     exit;
-// }
-// // Внутри блока if (isset($_GET['ajax']))
-// if ($_GET['ajax'] === 'kb_get_tables') { require 'modules/knowledge_base/api/get_tables.php'; exit; }
-// if ($_GET['ajax'] === 'kb_get_rows')   { require 'modules/knowledge_base/api/get_rows.php';   exit; }
-// if ($_GET['ajax'] === 'kb_delete_row') { require 'modules/knowledge_base/api/delete_row.php'; exit; }
 
-// // Для каждой таблицы (пример vendors)
-// if ($_GET['ajax'] === 'kb_vendors_add')    { require 'modules/knowledge_base/api/vendors/add.php';    exit; }
-// if ($_GET['ajax'] === 'kb_vendors_update') { require 'modules/knowledge_base/api/vendors/update.php'; exit; }
-
-    // Запрос полей для формы узла
-//     if ($_GET['ajax'] === 'get_node_columns') {
-//     require_once 'modules/nodes_page/api/GetData/get_node_columns.php';
-//     exit;
-// }
-
-    // Запрос полей для формы оборудования
-//     if ($_GET['ajax'] === 'get_equipment_columns') {
-//     require_once 'modules/nodes_page/api/GetData/get_equipment_columns.php';
-//     exit;
-// }
 if ($_GET['ajax'] === 'delete_item' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     require_once 'modules/nodes_page/api/DeleteData/delete_item.php';
     exit;
 }
 
-    // Запрос локаций
-//    if ($_GET['ajax'] === 'get_locations') {
-//     require_once 'modules/nodes_page/buildings/api/GetData/get_locations.php';
-//     exit;
-// }
-
-//     if ($_GET['ajax'] === 'get_buildings') {
-//     require_once 'modules/nodes_page/buildings/api/GetData/get_buildings.php';
-//     exit;
-// }
 // Список свободных IP-адресов (не занятых в оборудовании)
 if ($_GET['ajax'] === 'get_free_ips') {
     $stmt = $pdo->query("SELECT Id, ip_address FROM ip_address WHERE Id NOT IN (SELECT ip_address FROM equipment WHERE ip_address IS NOT NULL) ORDER BY ip_address");
     echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
     exit;
 }
-// if ($_GET['ajax'] === 'check_unique' && isset($_GET['field'], $_GET['value'])) {
-//     $field = $_GET['field'];
-//     $value = $_GET['value'];
-//     $allowed = ['hostname', 'serial_number', 'mac_address', 'ip_address'];
-//     if (!in_array($field, $allowed)) {
-//         echo json_encode(['error' => 'Invalid field']);
-//         exit;
-//     }
 
-//     $currentId = isset($_GET['exclude_id']) ? (int)$_GET['exclude_id'] : 0;
-//     $sql = "SELECT e.id, e.id_node, e.warehouse_id, n.KY_number, w.name AS warehouse_name, 
-//                    ip.ip_address AS ip_display
-//             FROM equipment e
-//             LEFT JOIN nodes n ON e.id_node = n.id_node
-//             LEFT JOIN warehouses w ON e.warehouse_id = w.id
-//             LEFT JOIN ip_address ip ON e.ip_address = ip.Id
-//             WHERE e.`$field` = ?";
-//     $params = [$value];
-//     if ($currentId) {
-//         $sql .= " AND e.id != ?";
-//         $params[] = $currentId;
-//     }
-//     $stmt = $pdo->prepare($sql);
-//     $stmt->execute($params);
-//     $dup = $stmt->fetch();
-
-//     if ($dup) {
-//         if ($dup['id_node']) {
-//             $ky = $dup['KY_number'] ? 'КУ-' . $dup['KY_number'] : 'узел ' . $dup['id_node'];
-//             $message = "Оборудование с таким $field уже находится в $ky";
-//         } elseif ($dup['warehouse_id']) {
-//             $wh = $dup['warehouse_name'] ?: 'склад ' . $dup['warehouse_id'];
-//             $message = "Оборудование с таким $field уже находится на складе «$wh»";
-//         } else {
-//             $message = "Оборудование с таким $field уже существует";
-//         }
-//         // Для ip_address покажем сам IP в сообщении
-//         if ($field === 'ip_address' && $dup['ip_display']) {
-//             $message = "IP-адрес {$dup['ip_display']} уже используется оборудованием в " . ($dup['id_node'] ? 'КУ-'.$dup['KY_number'] : 'на складе «'.$wh.'»');
-//         }
-//         echo json_encode(['exists' => true, 'message' => $message]);
-//     } else {
-//         echo json_encode(['exists' => false]);
-//     }
-//     exit;
-// }
 
 if ($_GET['ajax'] === 'build_stack' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json; charset=utf-8');
@@ -465,29 +324,6 @@ if ($_GET['ajax'] === 'build_stack' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-// if ($_GET['ajax'] === 'add_meta' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-//     require_once 'modules/nodes_page/api/AddData/add_equipment_meta.php';
-//     exit;
-// }
-// Получить один узел
-// if ($_GET['ajax'] === 'get_node_item' && isset($_GET['id'])) {
-//     require_once 'modules/nodes_page/api/GetData/get_node_item.php';
-//     exit;
-// }
-// Получить одно оборудование
-// if ($_GET['ajax'] === 'get_equipment_item' && isset($_GET['id'])) {
-//     require_once 'modules/nodes_page/api/GetData/get_equipment_item.php';
-//     exit;
-// }
-// if ($_GET['ajax'] === 'get_nodes_list') {
-//     require_once 'modules/nodes_page/api/GetData/get_nodes_list.php';
-//     exit;
-// }
-// Получение узла для редактирования
-// if ($_GET['ajax'] === 'get_node' && isset($_GET['id'])) {
-//     require_once 'modules/nodes_page/api/GetData/get_node.php';
-//     exit;
-// }
 // Обновление узла
 if ($_GET['ajax'] === 'update_node' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $id = $_POST['id'] ?? 0;
@@ -521,49 +357,13 @@ if ($_GET['ajax'] === 'add_meta' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-// Обновление оборудования
-// if ($_GET['ajax'] === 'update_equipment' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-//     require_once 'modules/nodes_page/api/UpdateData/update_equipment.php';
-//     exit;
-// }
-
-// if ($_GET['ajax'] === 'check_mac') {
-//     require_once 'api/GetData/check_mac.php';
-//     exit;
-// }
 
 if ($_GET['ajax'] === 'get_warehouses') {
     require_once __DIR__ . '/modules/warehouse_page/api/GetData/get_warehouses.php';
     exit;
 }
 
-// Отдельный обработчик для фильтрованного списка моделей
-if (isset($_GET['ajax'])) {
-    header('Content-Type: application/json; charset=utf-8');
 
-    // ========== НАШ НОВЫЙ ОБРАБОТЧИК ==========
-    // if ($_GET['ajax'] === 'get_list_models' && isset($_GET['vendor_id'])) {
-    //     $vendorId = (int)$_GET['vendor_id'];
-    //     $stmt = $pdo->prepare("SELECT id, name FROM device_models WHERE Vendor = ? ORDER BY name");
-    //     $stmt->execute([$vendorId]);
-    //     $data = $stmt->fetchAll();
-    //     echo json_encode(['data' => $data]);
-    //     exit;
-    // }
-    // =========================================
-
-    // Остальные обработчики...
-    // if ($_GET['ajax'] === 'get_equipment' && isset($_GET['node_id'])) {
-    //     require_once 'modules/nodes_page/api/GetData/get_equipment.php';
-    //     exit;
-    // }
-    // ...
-} 
-// ============================================
-//     if ($_GET['ajax'] === 'move_equipment' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-//     require_once 'modules/nodes_page/api/MoveData/move_equipment.php';
-//     exit;
-// }
 
 if ($_GET['ajax'] === 'get_vendor_default' && isset($_GET['vendor_id'])) {
     require_once 'modules/nodes_page/api/GetData/get_vendor_default.php';
@@ -580,24 +380,7 @@ if ($_GET['ajax'] === 'save_service_instruction' && $_SERVER['REQUEST_METHOD'] =
     require_once 'modules/nodes_page/api/UpdateData/save_service_instruction.php';
     exit;
 }
-// if ($_GET['ajax'] === 'delete_stack_device' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-//     require_once 'modules/nodes_page/stack/api/DeleteData/delete_stack_device.php';
-//     exit;
-// }
 
-    // // Запрос типов узлов
-    // if ($_GET['ajax'] === 'get_node_types') {
-    //     require_once 'modules/nodes_page/api/GetData/get_node_types.php';
-    //     exit;
-    // }
-// if ($_GET['ajax'] === 'get_equipment_item' && isset($_GET['id'])) {
-//     require_once 'modules/nodes_page/api/GetData/get_equipment_item.php';
-//     exit;
-// }
-// if ($_GET['ajax'] === 'update_equipment' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-//     require_once 'modules/nodes_page/api/AddData/update_equipment.php';
-//     exit;
-// }
     // Добавление узла
 if ($_GET['ajax'] === 'add_node' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     // Проверка на дубликат KY_number
@@ -643,17 +426,6 @@ if ($_GET['ajax'] === 'update_rack_unit_size' && $_SERVER['REQUEST_METHOD'] === 
     exit;
 }
 
-// Добавление оборудования
-// if ($_GET['ajax'] === 'add_equipment' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-//     require_once 'modules/nodes_page/api/AddData/add_equipment.php';
-//     exit;
-// }
-
-    /// Добавление столбца
-// if ($_GET['ajax'] === 'add_column' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-//     require_once 'modules/nodes_page/api/AddData/add_column.php';
-//     exit;
-// }
 
 if ($_GET['ajax'] == 'add_ip') {
     require_once 'modules/nodes_page/api/AddData/add_ip.php';
@@ -663,35 +435,12 @@ if ($_GET['ajax'] == 'add_model') {
     require_once 'modules/nodes_page/api/AddData/add_model.php';
     exit;
 }
-// if ($_GET['ajax'] === 'get_stack_info' && isset($_GET['group_id'])) {
-//     require_once 'modules/nodes_page/stack/api/GetData/get_stack_info.php';
-//     exit;
-// }
-// if ($_GET['ajax'] === 'get_stack_devices') {
-//     require_once 'modules/nodes_page/stack/api/GetData/get_stack_devices.php';
-//     exit;
-// }
 
-
-    // // Добавление здания
-    // if ($_GET['ajax'] === 'add_building' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    //    require_once 'modules/nodes_page/buildings/api/AddData/add_building.php';
-    //     exit;
-    // }
-
-    // Добавление локации
-    // if ($_GET['ajax'] === 'add_location' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    //     require_once 'modules/nodes_page/buildings/api/AddData/add_location.php';
-    //     exit;
-    // }
     if ($_GET['ajax'] === 'get_nodes') {
     require_once 'modules/nodes_page/api/GetData/get_nodes.php';
     exit;
 }
-// if ($_GET['ajax'] === 'save_stack_group' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-//     require_once 'modules/nodes_page/stack/api/UpdateData/save_stack_group.php';
-//     exit;
-// }
+
 
 if ($_GET['ajax'] === 'add_warehouse' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     require_once 'modules/warehouse_page/api/AddData/add_warehouse.php';

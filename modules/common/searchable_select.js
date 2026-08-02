@@ -70,6 +70,10 @@ class SearchableSelect {
                     const div = document.createElement('div');
                     div.className = 'searchable-select-option';
                     div.textContent = opt.textContent;
+                    // --- ИЗМЕНЕНО: разрешаем переносы строк в выпадающем списке ---
+                    div.style.whiteSpace = 'normal';
+                    div.style.lineHeight = '1.4';
+                    div.style.wordWrap = 'break-word';
                     div.addEventListener('click', () => {
                         this.searchInput.value = opt.textContent;
                         this.select.value = opt.value;
@@ -103,6 +107,10 @@ class SearchableSelect {
                 const div = document.createElement('div');
                 div.className = 'searchable-select-option';
                 div.textContent = item.opt.textContent;
+                // --- ИЗМЕНЕНО: разрешаем переносы строк в выпадающем списке ---
+                div.style.whiteSpace = 'normal';
+                div.style.lineHeight = '1.4';
+                div.style.wordWrap = 'break-word';
                 div.addEventListener('click', () => {
                     this.searchInput.value = item.opt.textContent;
                     this.select.value = item.opt.value;
