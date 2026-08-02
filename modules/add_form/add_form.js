@@ -313,6 +313,10 @@ function closeAddForm(force = false) {
     window.AppState.currentNodeTypeSelect = null;
     window.AppState.currentStackInitialData = null;
     window.AppState.currentStackGroupId = null;
+    // Без сброса этот ID оставался от предыдущего стека и подставлялся
+    // в следующую форму — в селекте «Шкаф» появлялись шкафы чужого узла
+    window.AppState.currentStackNodeId = null;
+    window.AppState.currentRelatedId = null;
     window.AppState.currentExtraData = {};
     window.AppState.currentInitialData = null;
     window.AppState.skipCloseConfirmation = false; // сбрасываем флаг

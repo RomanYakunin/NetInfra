@@ -189,24 +189,24 @@
         let html = '<div class="rack-frame">';
         html += '<div class="rack-grid">';
 
-        // Рисуем сверху вниз: юнит height … юнит 1
-        for (let u = height; u >= 1; u--) {
+        // Рисуем сверху вниз: юнит 1 наверху, юнит height внизу.
+        // Номер юнита совпадает с номером строки grid — пересчёт не нужен.
+        for (let u = 1; u <= height; u++) {
             const eq = occupied[u];
 
             // Номер юнита — всегда
-            html += `<div class="rack-unit-no" style="grid-row: ${height - u + 1};">${u}</div>`;
+            html += `<div class="rack-unit-no" style="grid-row: ${u};">${u}</div>`;
 
             if (!eq) {
-                html += `<div class="rack-slot empty" style="grid-row: ${height - u + 1};" data-unit="${u}"></div>`;
+                html += `<div class="rack-slot empty" style="grid-row: ${u};" data-unit="${u}"></div>`;
                 continue;
             }
 
-            // Блок устройства рисуем только на его верхнем юните
+            // Блок устройства рисуем только на его первом (верхнем) юните
             const size = eq.unit_size || 1;
-            const topUnit = eq.unit_start + size - 1;
-            if (u !== topUnit) continue;
+            if (u !== eq.unit_start) continue;
 
-            const rowStart = height - topUnit + 1;
+            const rowStart = eq.unit_start;
             const c = colorFor(eq.device_type_name);
             const isHighlight = highlightEquipId && eq.id === highlightEquipId;
             const isStack = !!eq.stack_id;
@@ -216,11 +216,15 @@
             if (eq.model_name) meta.push(esc(eq.model_name));
 
             const badges = [];
-            if (eq.Poe) badges.push('<span class="rack-badge poe" title="PoE">⚡PoE</span>');
+            if (eq.Poe) badges.push('<span class="rack-badge poe" title="PoE">⚡</span>');
             badges.push(eq.status === 'active'
                 ? '<span class="rack-badge on" title="Активно">●</span>'
                 : '<span class="rack-badge off" title="Не активно">●</span>');
             if (size > 1) badges.push(`<span class="rack-badge size">${size}U</span>`);
+            // Слот в стеке — важен для идентификации устройства внутри стека
+            if (isStack && eq.Slot !== null && eq.Slot !== undefined && eq.Slot !== '') {
+                badges.push(`<span class="rack-badge slot" title="Слот в стеке">S${eq.Slot}</span>`);
+            }
 
             html += `
                 <div class="rack-device${isHighlight ? ' highlight' : ''}${isStack ? ' in-stack' : ''}"

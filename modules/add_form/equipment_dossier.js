@@ -21,6 +21,11 @@ async function buildEquipmentDossier(fieldsContainer, config, initialData, extra
         'Annotation', 'status'
     ];
 
+    // На складе оборудование в шкаф не ставится — убираем «Шкаф» и «Юнит»
+    if (extraData?.location_type === 'warehouse') {
+        dossierFields = dossierFields.filter(n => n !== 'id_rack' && n !== 'unit_position');
+    }
+
     let deviceTypeSelect = null, poeGroup = null;
 
     dossierFields.forEach(name => {
@@ -86,6 +91,20 @@ async function buildEquipmentDossier(fieldsContainer, config, initialData, extra
             input.name = field.name;
             input.className = 'dossier-input';
             if (field.name === 'mac_address') input.classList.add('mac-address');
+
+            // Юнит: одиночное значение (4) либо диапазон (4-8).
+            // Тип принудительно text — number не принимает дефис.
+            if (field.name === 'unit_position') {
+                input.type = 'text';
+                input.placeholder = 'например 4 или 4-8';
+                input.pattern = '^\\s*\\d+\\s*(-\\s*\\d+\\s*)?$';
+                input.title = 'Номер юнита или диапазон, например 4 или 4-8';
+                input.addEventListener('input', function () {
+                    const ok = this.value.trim() === '' || /^\s*\d+\s*(-\s*\d+\s*)?$/.test(this.value);
+                    this.classList.toggle('input-error', !ok);
+                });
+            }
+
             valueDiv.appendChild(input);
         }
         dossierGrid.appendChild(item);
@@ -173,19 +192,22 @@ servicesSection.appendChild(servicesBody);
 dossier.appendChild(servicesSection);
 
     
-        // --- LLDP-соседи ---
-    const lldpSection = document.createElement('div');
-lldpSection.className = 'dossier-section lldp-section';
-lldpSection.innerHTML = '<h4 onclick="toggleSection(this)"><span class="section-arrow">▶</span> 📡 LLDP-соседи</h4>';
-const lldpBody = document.createElement('div');
-lldpBody.className = 'section-body';
-lldpBody.style.display = 'none';
-lldpBody.innerHTML = `
-    <textarea id="lldp-textarea" class="dossier-input" rows="6" placeholder="Вставьте вывод команды..." style="font-family:monospace; resize:vertical;"></textarea>
-    <div id="lldp-result-table" style="margin-top:0.8rem; display:none;"></div>
-`;
-lldpSection.appendChild(lldpBody);
-dossier.appendChild(lldpSection);
+    // --- LLDP-соседи ---
+    // На складе оборудование не подключено к сети — секция не нужна
+    if (extraData?.location_type !== 'warehouse') {
+        const lldpSection = document.createElement('div');
+        lldpSection.className = 'dossier-section lldp-section';
+        lldpSection.innerHTML = '<h4 onclick="toggleSection(this)"><span class="section-arrow">▶</span> 📡 LLDP-соседи</h4>';
+        const lldpBody = document.createElement('div');
+        lldpBody.className = 'section-body';
+        lldpBody.style.display = 'none';
+        lldpBody.innerHTML = `
+            <textarea id="lldp-textarea" class="dossier-input" rows="6" placeholder="Вставьте вывод команды..." style="font-family:monospace; resize:vertical;"></textarea>
+            <div id="lldp-result-table" style="margin-top:0.8rem; display:none;"></div>
+        `;
+        lldpSection.appendChild(lldpBody);
+        dossier.appendChild(lldpSection);
+    }
 
             // --- Секция локального администратора ---
         const credentialsSection = document.createElement('div');
@@ -343,13 +365,19 @@ if (typeof setupEquipmentValidation === 'function') {
     });
 
     // Узел, в который добавляется оборудование, — нужен для фильтра шкафов.
-    // Для устройства стека берём currentStackNodeId, для обычного оборудования —
-    // relatedId / extraData.node_id, при редактировании — id_node записи.
-    const rackNodeId = state.currentStackNodeId
-        || state.currentRelatedId
-        || extraData?.node_id
-        || initialData?.id_node
-        || null;
+    // Порядок важен: контекст ТЕКУЩЕЙ формы приоритетнее, чем currentStackNodeId,
+    // который остаётся от предыдущей работы со стеком и иначе подставил бы
+    // чужой узел (в форме показывались бы шкафы другого КУ).
+    let rackNodeId;
+    if (extraData?.stack_mode) {
+        // Форма устройства стека: свой узел приходит только через AppState
+        rackNodeId = state.currentStackNodeId || state.currentExtraData?.node_id || null;
+    } else {
+        rackNodeId = state.currentRelatedId
+            || extraData?.node_id
+            || initialData?.id_node
+            || null;
+    }
 
     // Загрузка опций для всех селектов
     const allSelects = fieldsContainer.querySelectorAll('select[data-source]');

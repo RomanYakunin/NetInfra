@@ -26,6 +26,40 @@
         return div.innerHTML;
     }
 
+    // Русские названия типов данных MySQL для вкладки «Структура»
+    const TYPE_LABELS = {
+        int: 'целое число', tinyint: 'целое (малое)', smallint: 'целое (малое)',
+        mediumint: 'целое', bigint: 'целое (большое)',
+        decimal: 'десятичное', float: 'дробное', double: 'дробное',
+        varchar: 'строка', char: 'строка (фикс.)',
+        text: 'текст', mediumtext: 'текст (средний)', longtext: 'текст (длинный)',
+        date: 'дата', datetime: 'дата и время', timestamp: 'дата/время',
+        time: 'время', year: 'год',
+        enum: 'перечисление', set: 'набор',
+        json: 'JSON', blob: 'двоичные данные', boolean: 'логический', bool: 'логический'
+    };
+
+    // Русские названия типов ключей
+    const KEY_LABELS = {
+        PRI: 'первичный', UNI: 'уникальный', MUL: 'индекс'
+    };
+
+    /**
+     * «varchar(100)» → «строка (100)», «tinyint(1) unsigned» → «целое (малое) (1), без знака».
+     * Исходный тип показываем рядом, чтобы не терять точность.
+     */
+    function typeLabel(sqlType) {
+        if (!sqlType) return '';
+        const m = String(sqlType).match(/^([a-z]+)(\(([^)]*)\))?(.*)$/i);
+        if (!m) return sqlType;
+        const base = TYPE_LABELS[m[1].toLowerCase()];
+        if (!base) return sqlType;
+        let out = base;
+        if (m[3]) out += ' (' + m[3] + ')';
+        if (/unsigned/i.test(m[4] || '')) out += ', без знака';
+        return out;
+    }
+
     function toast(msg, type) {
         if (typeof showToast === 'function') showToast(msg, type);
         else alert(msg);
@@ -125,9 +159,9 @@
             return `
             <tr data-column="${esc(col.Field)}">
                 <td class="kb-strong">${esc(col.Field)}${isPk ? ' <span class="kb-pk" title="Первичный ключ">🔑</span>' : ''}</td>
-                <td><code>${esc(col.Type)}</code></td>
+                <td><span class="kb-type-ru">${esc(typeLabel(col.Type))}</span><br><code class="kb-muted">${esc(col.Type)}</code></td>
                 <td>${col.Null === 'YES' ? 'да' : 'нет'}</td>
-                <td>${esc(col.Key || '—')}</td>
+                <td>${esc(KEY_LABELS[col.Key] || col.Key || '—')}</td>
                 <td>${col.Default === null ? '<span class="kb-muted">NULL</span>' : esc(col.Default)}</td>
                 <td class="kb-muted">${esc(col.Extra || '—')}</td>
                 <td class="kb-row-actions">

@@ -66,7 +66,7 @@ if (empty($data['device_type_id']) || (empty($data['id_node']) && empty($data['w
 // ========== 4. Приведение числовых полей ==========
 $intFields = [
     'ip_address', 'Poe', 'device_type_id', 'vendor_id',
-    'model_id', 'firmwares', 'id_rack', 'unit_position',
+    'model_id', 'firmwares', 'id_rack',
     'id_node', 'Slot', 'warehouse_id', 'group_id'
 ];
 foreach ($intFields as $field) {
@@ -78,6 +78,24 @@ foreach ($intFields as $field) {
         }
     } else {
         $data[$field] = null;
+    }
+}
+
+// Юнит: одиночное значение (4) либо диапазон (4-8). Столбец varchar,
+// поэтому в $intFields его нет — приводим к каноничному виду и проверяем формат.
+if (array_key_exists('unit_position', $data) && $data['unit_position'] !== null) {
+    $raw = trim((string)$data['unit_position']);
+    if ($raw === '') {
+        $data['unit_position'] = null;
+    } elseif (preg_match('/^(\d+)\s*-\s*(\d+)$/', $raw, $m)) {
+        $from = (int)$m[1]; $to = (int)$m[2];
+        if ($from > $to) { [$from, $to] = [$to, $from]; }
+        $data['unit_position'] = $from === $to ? (string)$from : $from . '-' . $to;
+    } elseif (preg_match('/^\d+$/', $raw)) {
+        $data['unit_position'] = $raw;
+    } else {
+        echo json_encode(['error' => 'Юнит указывается числом (4) или диапазоном (4-8)']);
+        exit;
     }
 }
 if ($data['ip_address'] === '') {

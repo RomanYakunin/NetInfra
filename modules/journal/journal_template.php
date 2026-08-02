@@ -33,7 +33,7 @@ if (!isAdmin()) {
             <select id="logAction">
                 <option value="">Все</option>
                 <?php foreach ($journalActions as $a): ?>
-                    <option value="<?= htmlspecialchars($a) ?>"><?= htmlspecialchars($a) ?></option>
+                    <option value="<?= htmlspecialchars($a) ?>"><?= htmlspecialchars(journalActionLabel($a)) ?></option>
                 <?php endforeach; ?>
             </select>
         </div>

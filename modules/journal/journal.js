@@ -25,6 +25,30 @@
         building: 'Здание', warehouse: 'Склад', rack: 'Шкаф', user: 'Пользователь'
     };
 
+    // Человекочитаемые названия действий
+    const ACTION_LABELS = {
+        login: 'Вход', logout: 'Выход',
+        add_node: 'Добавление узла', edit_node: 'Изменение узла', delete_node: 'Удаление узла',
+        add_equipment: 'Добавление оборудования', edit_equipment: 'Изменение оборудования',
+        delete_equipment: 'Удаление оборудования',
+        move: 'Перемещение', move_equipment: 'Перемещение',
+        add_stack: 'Создание стека', edit_stack: 'Изменение стека',
+        save_stack_device: 'Изменение устройства стека',
+        delete_stack_device: 'Вывод устройства из стека',
+        add_building: 'Добавление здания', edit_building: 'Изменение здания',
+        delete_building: 'Удаление здания',
+        add_warehouse: 'Добавление склада', edit_warehouse: 'Изменение склада',
+        delete_warehouse: 'Удаление склада',
+        add_rack: 'Добавление шкафа',
+        add_user: 'Добавление пользователя', edit_user: 'Изменение пользователя',
+        delete_user: 'Удаление пользователя'
+    };
+
+    /** Действие на русском; неизвестные показываем как есть. */
+    function actionLabel(action) {
+        return ACTION_LABELS[action] || action;
+    }
+
     function esc(str) {
         if (str === null || str === undefined) return '';
         const div = document.createElement('div');
@@ -103,7 +127,7 @@
                 <td class="journal-nowrap">${esc(dt)}</td>
                 <td>${esc(r.username || 'system')}</td>
                 <td class="journal-muted journal-nowrap">${esc(r.ip_address || '—')}</td>
-                <td class="journal-nowrap"><span class="journal-action-icon">${icon}</span> ${esc(r.action)}</td>
+                <td class="journal-nowrap"><span class="journal-action-icon">${icon}</span> ${esc(actionLabel(r.action))}</td>
                 <td>${esc(objText) || '<span class="journal-muted">—</span>'}</td>
                 <td class="journal-details">${esc(details) || '<span class="journal-muted">—</span>'}</td>
             </tr>`;
@@ -179,7 +203,7 @@
                 ['Дата/время', (r.created_at || '').replace('T', ' ')],
                 ['Пользователь', r.username || 'system'],
                 ['IP-адрес', r.ip_address || '—'],
-                ['Действие', r.action],
+                ['Действие', actionLabel(r.action)],
                 ['Тип объекта', OBJECT_LABELS[r.object_type] || r.object_type || '—'],
                 ['ID объекта', r.object_id ?? '—'],
                 ['Название объекта', r.object_name || '—']
