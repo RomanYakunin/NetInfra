@@ -176,6 +176,45 @@ try {
         }
     }
 
+
+    // ---------- LLDP-соседи ----------
+    // Клиент присылает массив {local_interface, neighbor_interface, neighbor_hostname}.
+    // Полностью заменяем набор соседей устройства: пришёл пустой массив — очищаем.
+    if (isset($_POST['lldp_neighbors'])) {
+        $lldp = json_decode($_POST['lldp_neighbors'], true);
+        if (is_array($lldp)) {
+            $pdo->prepare("DELETE FROM lldp_neighbors WHERE local_equipment_id = ?")->execute([$id]);
+
+            $insLldp = $pdo->prepare("INSERT INTO lldp_neighbors
+                (local_equipment_id, local_port, remote_device_id, remote_port, remote_device_type, remote_equipment_id)
+                VALUES (?, ?, ?, ?, ?, ?)");
+            $findRemote = $pdo->prepare("SELECT id FROM equipment WHERE hostname = ? LIMIT 1");
+
+            foreach ($lldp as $n) {
+                $localPort  = trim($n['local_interface'] ?? '');
+                $remoteHost = trim($n['neighbor_hostname'] ?? '');
+                $remotePort = trim($n['neighbor_interface'] ?? '');
+                if ($localPort === '' || $remoteHost === '') continue;
+
+                // Определяем, чем представлен сосед: IP, MAC или hostname
+                if (filter_var($remoteHost, FILTER_VALIDATE_IP)) {
+                    $remoteType = 'ip';
+                } elseif (preg_match('/^([0-9a-f]{2}[:-]){5}[0-9a-f]{2}$/i', $remoteHost)
+                       || preg_match('/^([0-9a-f]{4}[.-]){2}[0-9a-f]{4}$/i', $remoteHost)) {
+                    $remoteType = 'mac';
+                } else {
+                    $remoteType = 'hostname';
+                }
+
+                // Пытаемся связать соседа с записью в БД по hostname
+                $findRemote->execute([$remoteHost]);
+                $remoteId = $findRemote->fetchColumn() ?: null;
+
+                $insLldp->execute([$id, $localPort, $remoteHost, $remotePort ?: null, $remoteType, $remoteId]);
+            }
+        }
+    }
+
     // 4. Обновление учётных данных локального администратора
     $login = trim($_POST['local_admin_login'] ?? '');
     $password = $_POST['local_admin_password'] ?? '';

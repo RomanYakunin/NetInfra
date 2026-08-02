@@ -340,6 +340,13 @@ if (typeof setupEquipmentValidation === 'function') {
         });
     }
 
+    // --- Подгрузка сохранённых LLDP-соседей при редактировании ---
+    // Раньше секция всегда открывалась пустой: соседи вообще не сохранялись,
+    // а теперь их нужно показать, чтобы при пересохранении они не потерялись.
+    if (initialData && initialData.id && extraData?.location_type !== 'warehouse') {
+        loadSavedLldpNeighbors(initialData.id);
+    }
+
     // --- Обработчики для уже добавленных элементов ---
     // const addTypeBtn = document.getElementById('add-module-type-btn');
     // if (addTypeBtn) {
@@ -1031,4 +1038,39 @@ function appendEquipmentExtras(formData, scope) {
     formData.set('modules', JSON.stringify(collectEquipmentModules(scope)));
     formData.set('services', JSON.stringify(collectEquipmentServices(scope)));
     return formData;
+}
+
+/**
+ * Подставляет сохранённых LLDP-соседей в таблицу формы при редактировании.
+ * Разметка та же, что строит парсер вывода команды, поэтому сбор при
+ * сохранении (.lldp-neighbors-table tbody tr) работает без изменений.
+ */
+async function loadSavedLldpNeighbors(equipmentId) {
+    const box = document.getElementById('lldp-result-table');
+    if (!box) return;
+
+    try {
+        const resp = await fetch(`?ajax=get_equipment_lldp&id=${encodeURIComponent(equipmentId)}`);
+        const data = await resp.json();
+        if (data.error || !Array.isArray(data.data) || !data.data.length) return;
+
+        let html = '<table class="lldp-neighbors-table"><thead><tr>'
+                 + '<th>Локальный порт</th><th>Порт соседа</th><th>Имя соседа</th></tr></thead><tbody>';
+        data.data.forEach(n => {
+            // Если сосед найден в БД — подсказываем это заголовком строки
+            const known = n.remote_equipment_id ? ' title="Найден в базе"' : '';
+            html += `
+                <tr${known}>
+                    <td><input type="text" class="dossier-input lldp-local-port" value="${escapeHtml(n.local_interface || '')}" readonly></td>
+                    <td><input type="text" class="dossier-input lldp-neighbor-port" value="${escapeHtml(n.neighbor_interface || '')}" readonly></td>
+                    <td><input type="text" class="dossier-input lldp-neighbor-hostname" value="${escapeHtml(n.neighbor_hostname || '')}"></td>
+                </tr>`;
+        });
+        html += '</tbody></table>';
+
+        box.innerHTML = html;
+        box.style.display = 'block';
+    } catch (e) {
+        // Молча: отсутствие соседей не должно мешать открытию формы
+    }
 }

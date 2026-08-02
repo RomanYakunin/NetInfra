@@ -29,32 +29,40 @@ require_once dirname(__FILE__, 5) . '/config/db.php';
  * Формирует читаемое сообщение о дубликате.
  */
 function buildDuplicateMessage($row, $fieldDisplay, $nodeId, $warehouseId, $isWarehouse = false) {
-    // 1. Тот же узел (КУ)
-    if ($nodeId && $row['id_node'] == $nodeId) {
-        return "Данный {$fieldDisplay} уже используется в этом КУ";
-    }
-    // 2. Тот же склад
-    if ($warehouseId && $row['warehouse_id'] == $warehouseId) {
-        return "Устройство уже находится на этом складе";
-    }
-    // 3. Дубликат в другом узле (с номером КУ)
+    // Название поля идёт в именительном падеже, а место всегда называем
+    // конкретно («в КУ-34», «на складе «Подвал»»), а не «в этом КУ» —
+    // иначе непонятно, где именно искать занятое значение.
+    $device = !empty($row['hostname']) ? " (устройство «{$row['hostname']}»)" : '';
+
+    // 1. Дубликат в узле — всегда с номером КУ
     if (!empty($row['KY_number'])) {
-        if ($isWarehouse) {
-            return "Оборудование с таким {$fieldDisplay} находится в КУ-{$row['KY_number']}";
+        $where = "КУ-{$row['KY_number']}";
+        // Тот же узел, в который сейчас добавляем
+        if ($nodeId && $row['id_node'] == $nodeId) {
+            return "Такой {$fieldDisplay} уже есть в этом узле — {$where}{$device}";
         }
-        return "Данный {$fieldDisplay} уже используется в КУ-{$row['KY_number']}";
+        return "Такой {$fieldDisplay} уже используется в {$where}{$device}";
     }
-    // 4. Дубликат с hostname, но без КУ
+
+    // 2. Дубликат на складе
+    if (!empty($row['warehouse_id'])) {
+        $wh = $row['warehouse_display'] ?: $row['warehouse_name'] ?: "склад #{$row['warehouse_id']}";
+        if ($warehouseId && $row['warehouse_id'] == $warehouseId) {
+            return "Такой {$fieldDisplay} уже есть на этом складе — «{$wh}»{$device}";
+        }
+        return "Такой {$fieldDisplay} уже используется на складе «{$wh}»{$device}";
+    }
+
+    // 3. Узел есть, но номер КУ не задан
+    if (!empty($row['id_node'])) {
+        return "Такой {$fieldDisplay} уже используется в узле #{$row['id_node']}{$device}";
+    }
+
+    // 4. Оборудование без привязки к узлу и складу
     if (!empty($row['hostname'])) {
-        return "Данный {$fieldDisplay} уже используется устройством {$row['hostname']}";
+        return "Такой {$fieldDisplay} уже используется устройством «{$row['hostname']}» (без привязки к узлу и складу)";
     }
-    // 5. На другом складе
-    if ($row['warehouse_id']) {
-        $wh = $row['warehouse_display'] ?: "склад {$row['warehouse_id']}";
-        return "Устройство на складе ({$wh})";
-    }
-    // 6. Без привязки
-    return "Оборудование с таким {$fieldDisplay} уже существует (без привязки)";
+    return "Такой {$fieldDisplay} уже используется другим оборудованием (без привязки к узлу и складу)";
 }
 
 try {
