@@ -70,6 +70,16 @@ return [
     'snmp_query'              => 'modules/nodes_page/api/GetData/snmp_query.php',
     'update_rack_unit'        => 'modules/nodes_page/api/UpdateData/update_rack_unit.php',
 
+    // ----------------------------- ПАССИВНОЕ ОБОРУДОВАНИЕ -----------------------------
+    // Патч-панели, оптические кроссы, SFP-модули, блоки питания, терминалы.
+    // Хранятся отдельно от equipment: у них нет IP, прошивки и сервисов.
+    'get_passive_devices'     => 'modules/passive_devices/api/GetData/get_passive_devices.php',
+    'get_passive_ports'       => 'modules/passive_devices/api/GetData/get_passive_ports.php',
+    'add_passive_device'      => 'modules/passive_devices/api/AddData/add_passive_device.php',
+    'update_passive_device'   => 'modules/passive_devices/api/UpdateData/update_passive_device.php',
+    'update_passive_port'     => 'modules/passive_devices/api/UpdateData/update_passive_port.php',
+    'delete_passive_device'   => 'modules/passive_devices/api/DeleteData/delete_passive_device.php',
+
     // ----------------------------- БАЗА ЗНАНИЙ (управление таблицами БД) -----------------------------
     'kb_get_tables'           => 'modules/knowledge_base/api/kb_get_tables.php',
     'kb_get_columns'          => 'modules/knowledge_base/api/kb_get_columns.php',
