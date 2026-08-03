@@ -54,19 +54,9 @@
         if (tab) tab.classList.toggle('hidden', open);
     }
 
-    /**
-     * Открыть панель для оборудования. Повторный вызов для того же
-     * оборудования — закрывает панель (поведение переключателя).
-     */
-    async function openRackPanel(equipId) {
-        if (lastEquipId === equipId && rackPanelOpen) {
-            toggleRackPanel(false);
-            return;
-        }
-        lastEquipId = equipId;
-        highlightEquipId = equipId ? parseInt(equipId, 10) : null;
-        await loadRackData({ equipment_id: equipId });
-    }
+    // Открытие панели по конкретному оборудованию (openRackPanel) убрано:
+    // стойка теперь раскрывается компактным блоком под строкой узла —
+    // см. toggleNodeRacks в modules/nodes_page/nodes_page.js.
 
     /** Открыть панель для узла целиком (без выделения конкретного устройства). */
     async function openRackPanelForNode(nodeId) {
@@ -834,7 +824,8 @@
     });
 
     // ---------- Экспорт ----------
-    window.openRackPanel = openRackPanel;
+    // window.openRackPanel больше не экспортируется: шкафы показываются
+    // компактной стойкой под строкой узла (toggleNodeRacks в nodes_page.js).
     window.openRackPanelForNode = openRackPanelForNode;
     window.toggleRackPanel = toggleRackPanel;
 })();

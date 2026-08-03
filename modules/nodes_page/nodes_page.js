@@ -191,7 +191,7 @@ async function loadNodeEquipmentContent(nodeId, container) {
                     html += '<th><span class="add-col-btn" onclick="openAddColumnForm(\'equipment\')">+</span></th>';
                     html += '</tr></thead><tbody>';
                     group.members.forEach(member => {
-                        html += `<tr data-equipment-id="${member.id}" data-hostname="${member.hostname || ''}" class="equipment-stack-row">`;
+                        html += `<tr data-equipment-id="${member.id}" data-node-id="${nodeId}" data-hostname="${member.hostname || ''}" class="equipment-stack-row">`;
                         detailColumns.forEach(col => {
                             let val = member[col] !== undefined ? member[col] : '';
                             if (col === 'status') {
@@ -227,6 +227,350 @@ async function loadNodeEquipmentContent(nodeId, container) {
     } catch (error) {
         container.innerHTML = '<div class="no-equipment">Ошибка загрузки: ' + error.message + '</div>';
     }
+}
+
+/* ============================================================
+   КОМПАКТНОЕ ОТОБРАЖЕНИЕ ШКАФОВ ПОД СТРОКОЙ УЗЛА
+   Раскрывается пунктом «Отобразить стойку(-и)» контекстного меню узла.
+   Раньше для этого открывалась выдвижная панель справа (#rightPanel).
+   ============================================================ */
+
+const RACK_UNIT_H = 22;              // высота юнита в пикселях, см. .compact-rack-unit
+const nodeRacksCache = new Map();    // node_id → ответ get_rack, чтобы не дёргать сервер
+
+/** Сокращения типов устройств для тесных блоков шкафа. */
+const RACK_TYPE_SHORT = {
+    'Коммутатор': 'Комм.',
+    'Маршрутизатор': 'Маршр.',
+    'Межсетевой экран': 'МЭ',
+    'Точка доступа': 'ТД',
+    'Сервер': 'Серв.',
+    'Источник бесперебойного питания': 'ИБП',
+    'Медиаконвертер': 'Медиак.',
+    'Телефон': 'Тел.',
+};
+
+const PASSIVE_TYPE_SHORT = {
+    patch_panel:   'Патч-панель',
+    optical_panel: 'Кросс',
+    sfp_module:    'SFP-модуль',
+    psu_module:    'Блок питания',
+    terminal:      'Терминал',
+    other:         'Прочее',
+};
+
+function rackEsc(s) {
+    if (s === null || s === undefined) return '';
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+}
+
+function rackShortType(name) {
+    if (!name) return '';
+    if (RACK_TYPE_SHORT[name]) return RACK_TYPE_SHORT[name];
+    return name.length > 8 ? name.slice(0, 7) + '.' : name;
+}
+
+/** «192.168.24.15» → «…24.15»: в блок шкафа полный адрес не влезает. */
+function rackShortIp(ip) {
+    if (!ip) return '';
+    const parts = String(ip).split('.');
+    return parts.length === 4 ? '…' + parts[2] + '.' + parts[3] : String(ip);
+}
+
+/**
+ * Раскрывает/сворачивает секцию шкафов под строкой узла.
+ * @param {number|string} nodeId
+ * @param {Object} [opts] open — только раскрыть (не переключать),
+ *                        highlight — id оборудования, которое надо подсветить
+ */
+async function toggleNodeRacks(nodeId, opts) {
+    opts = opts || {};
+    const tableRow = document.querySelector(`tr.data-row[data-node-id="${nodeId}"]`);
+    if (!tableRow) return;
+
+    let detailRow = document.getElementById('rack-row-' + nodeId);
+
+    // Повторный вызов сворачивает секцию — если только не просили именно открыть
+    if (detailRow && detailRow.classList.contains('visible') && !opts.open) {
+        detailRow.classList.remove('visible');
+        return;
+    }
+
+    if (!detailRow) {
+        // Секция шкафов идёт сразу за секцией оборудования того же узла
+        const colspan = tableRow.children.length;
+        detailRow = document.createElement('tr');
+        detailRow.className = 'rack-detail-row';
+        detailRow.id = 'rack-row-' + nodeId;
+        detailRow.innerHTML = `<td colspan="${colspan}">
+            <div class="node-racks" id="rack-container-${nodeId}"></div>
+        </td>`;
+        const equipRow = document.getElementById('equip-row-' + nodeId);
+        const anchor = equipRow || tableRow;
+        anchor.parentNode.insertBefore(detailRow, anchor.nextSibling);
+    }
+
+    const container = document.getElementById('rack-container-' + nodeId);
+    detailRow.classList.add('visible');
+
+    if (container.dataset.loaded === 'true') {
+        if (opts.highlight) highlightRackDevice(container, opts.highlight);
+        smoothScrollTo(detailRow);
+        return;
+    }
+
+    container.innerHTML = '<div class="no-equipment"><span class="load-indicator loading"></span> Загрузка шкафов...</div>';
+    smoothScrollTo(detailRow);
+
+    try {
+        let data = nodeRacksCache.get(String(nodeId));
+        if (!data) {
+            data = await fetchJSON(`?ajax=get_rack&node_id=${nodeId}&_=${Date.now()}`);
+            nodeRacksCache.set(String(nodeId), data);
+        }
+        renderNodeRacks(data, container, nodeId);
+        container.dataset.loaded = 'true';
+        if (opts.highlight) highlightRackDevice(container, opts.highlight);
+    } catch (e) {
+        // «У этого узла пока нет шкафов» приходит как error — это не сбой
+        container.innerHTML = '<div class="no-equipment">' + rackEsc(e.message) + '</div>';
+        container.dataset.loaded = 'true';
+    }
+}
+
+/** Сбрасывает кеш шкафов узла — вызывать после правок шкафа или оборудования. */
+function invalidateNodeRacks(nodeId) {
+    if (nodeId === undefined) {
+        nodeRacksCache.clear();
+    } else {
+        nodeRacksCache.delete(String(nodeId));
+    }
+    const container = document.getElementById('rack-container-' + nodeId);
+    if (container) container.dataset.loaded = '';
+}
+
+/** Рисует заголовок секции и все шкафы узла друг за другом. */
+function renderNodeRacks(data, container, nodeId) {
+    const racks = data.racks || [];
+    container.innerHTML = '';
+
+    const head = document.createElement('div');
+    head.className = 'node-racks-head';
+    head.innerHTML = `<span class="nested-title">Шкафы узла (${racks.length})</span>
+        <span class="node-racks-tools">
+            <button type="button" class="node-racks-btn" data-a="reload" title="Обновить">⟳</button>
+            <button type="button" class="node-racks-btn" data-a="collapse" title="Свернуть">▾</button>
+        </span>`;
+    head.querySelector('[data-a="collapse"]').onclick = (e) => {
+        e.stopPropagation();
+        document.getElementById('rack-row-' + nodeId)?.classList.remove('visible');
+    };
+    // Данные закешированы — после правок в шкафу их нужно перечитать вручную
+    head.querySelector('[data-a="reload"]').onclick = (e) => {
+        e.stopPropagation();
+        invalidateNodeRacks(nodeId);
+        toggleNodeRacks(nodeId, { open: true });
+    };
+    container.appendChild(head);
+
+    if (!racks.length) {
+        container.insertAdjacentHTML('beforeend', '<div class="no-equipment">У этого узла нет шкафов</div>');
+        return;
+    }
+
+    const strip = document.createElement('div');
+    strip.className = 'node-racks-strip';
+    container.appendChild(strip);
+
+    racks.forEach(rack => renderCompactRack(rack, strip));
+}
+
+/**
+ * Рисует один компактный шкаф: юниты идут снизу вверх (1U внизу).
+ * @param {Object} rackData шкаф из get_rack (equipment[] + passive[])
+ * @param {HTMLElement} container куда добавить
+ */
+function renderCompactRack(rackData, container) {
+    const heightU = parseInt(rackData.height_u, 10) || 42;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'compact-rack';
+    wrap.dataset.rackId = rackData.id_rack;
+
+    // ---- Заголовок ----
+    const title = document.createElement('div');
+    title.className = 'compact-rack-title';
+    const model = [rackData.vendor_name, rackData.model_name].filter(Boolean).join(' ');
+    title.innerHTML = `<span class="compact-rack-name">${rackEsc(rackData.name || 'Шкаф #' + rackData.id_rack)}</span>
+        <span class="compact-rack-sub">${rackEsc(rackData.location_display || '')}</span>
+        <span class="compact-rack-sub">${rackEsc(model)}${model ? ' · ' : ''}${heightU}U</span>`;
+    wrap.appendChild(title);
+
+    // ---- Полотно юнитов ----
+    const body = document.createElement('div');
+    body.className = 'compact-rack-body';
+    body.style.height = (heightU * RACK_UNIT_H) + 'px';
+
+    // Сверху вниз рисуем от heightU до 1 — получается стойка «снизу вверх»
+    for (let u = heightU; u >= 1; u--) {
+        const unit = document.createElement('div');
+        unit.className = 'compact-rack-unit';
+        unit.style.height = RACK_UNIT_H + 'px';
+        unit.dataset.unit = u;
+        unit.innerHTML = `<span class="compact-rack-unum">${u}</span>`;
+        body.appendChild(unit);
+    }
+
+    // ---- Устройства поверх полотна ----
+    const items = (rackData.equipment || []).concat(rackData.passive || []);
+    items.forEach(eq => {
+        const start = parseInt(eq.unit_start, 10);
+        if (!start || start < 1 || start > heightU) return;   // без позиции блок рисовать негде
+        const size = Math.max(1, parseInt(eq.unit_size, 10) || 1);
+        const topUnit = Math.min(heightU, start + size - 1);
+
+        const block = document.createElement('div');
+        // В один юнит две строки не помещаются — там раскладка в строку
+        block.className = 'compact-rack-device'
+            + (eq.is_passive ? ' passive' : '')
+            + (size === 1 ? ' one-u' : '');
+        block.style.top = ((heightU - topUnit) * RACK_UNIT_H) + 'px';
+        block.style.height = (size * RACK_UNIT_H - 2) + 'px';
+
+        if (eq.is_passive) {
+            const label = PASSIVE_TYPE_SHORT[eq.type] || 'Пассивное';
+            const ports = eq.ports_count > 0 ? ' ' + eq.ports_count + 'p' : '';
+            block.dataset.passiveId = eq.id;
+            block.title = [eq.name, eq.model, eq.serial_number ? 'S/N ' + eq.serial_number : '']
+                .filter(Boolean).join(' · ');
+            block.innerHTML =
+                `<span class="crd-main">${rackEsc(eq.name || label)}</span>
+                 <span class="crd-meta">${rackEsc(label + ports)}${eq.ports_connected ? ' · занято ' + eq.ports_connected : ''}</span>`;
+        } else {
+            const dot = eq.status === 'active' ? 'active'
+                      : (eq.status === 'partial' ? 'partial' : 'inactive');
+            const slot = (eq.Slot !== null && eq.Slot !== undefined && eq.Slot !== '')
+                ? `<span class="crd-slot" title="Слот в стеке">Slot ${rackEsc(eq.Slot)}</span>` : '';
+            block.dataset.equipmentId = eq.id;
+            block.dataset.hostname = eq.hostname || '';
+            block.dataset.nodeId = rackData.id_node || '';
+            block.title = [
+                eq.hostname,
+                eq.ip_address,
+                eq.device_type_name,
+                eq.stack_hostname ? 'стек: ' + eq.stack_hostname : '',
+                eq.Poe ? 'PoE' : ''
+            ].filter(Boolean).join(' · ');
+            block.innerHTML =
+                `<span class="crd-main"><span class="crd-dot ${dot}"></span>${rackEsc(eq.hostname || 'без имени')}${slot}</span>
+                 <span class="crd-meta">${rackEsc(rackShortIp(eq.ip_address))}${eq.ip_address && eq.device_type_name ? ' · ' : ''}${rackEsc(rackShortType(eq.device_type_name))}${eq.Poe ? ' · PoE' : ''}</span>`;
+        }
+
+        body.appendChild(block);
+    });
+
+    wrap.appendChild(body);
+    container.appendChild(wrap);
+    bindCompactRackEvents(wrap, rackData);
+}
+
+/** Клик по блоку — досье, ПКМ — контекстное меню оборудования. */
+function bindCompactRackEvents(wrap, rackData) {
+    wrap.querySelectorAll('.compact-rack-device').forEach(block => {
+        const eqId = block.dataset.equipmentId;
+        const passiveId = block.dataset.passiveId;
+
+        block.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (passiveId) {
+                if (typeof openPassiveDeviceForm === 'function') {
+                    openPassiveDeviceForm({
+                        id: passiveId,
+                        onSaved: () => { invalidateNodeRacks(rackData.id_node); }
+                    });
+                }
+            } else if (eqId && typeof showEquipmentDetails === 'function') {
+                showEquipmentDetails(eqId);
+            }
+        });
+
+        block.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (passiveId) {
+                selectedNodeId = null;
+                selectedEquipmentId = null;
+                showCompactPassiveMenu(e, passiveId, rackData.id_node);
+                return;
+            }
+            if (!eqId) return;
+            selectedNodeId = null;
+            selectedEquipmentId = eqId;
+            selectedEquipmentData = {
+                id: eqId,
+                hostname: block.dataset.hostname || '',
+                node_id: block.dataset.nodeId || null,
+                Groupe: 1,
+                stackData: null
+            };
+            showContextMenu(e.clientX, e.clientY, [
+                { text: 'Редактировать', action: 'edit', icon: 'assets/icons/edit.png' },
+                { text: 'Переместить', action: 'move', icon: 'assets/icons/move.png' },
+                { text: 'Настройка оповещения', action: 'alerts', icon: 'assets/icons/alerts.png' },
+                { text: 'Добавить в чек-лист', action: 'checklist', icon: 'assets/icons/checklist.png' },
+                { text: 'Удалить', action: 'delete', icon: 'assets/icons/delete.png' },
+                { text: 'Подробнее', action: 'detailed' }
+            ]);
+        });
+    });
+}
+
+/** Небольшое меню для пассивного оборудования — общего обработчика у него нет. */
+function showCompactPassiveMenu(e, passiveId, nodeId) {
+    const menu = document.getElementById('ctxMenu');
+    if (!menu) return;
+    menu.innerHTML = '<div class="menu-item" data-a="edit">✏️ Редактировать</div>'
+                   + '<div class="menu-item" data-a="del">🗑️ Удалить</div>';
+    menu.style.display = 'block';
+    menu.style.left = e.clientX + 'px';
+    menu.style.top = e.clientY + 'px';
+
+    menu.querySelectorAll('.menu-item').forEach(item => {
+        item.onclick = (ev) => {
+            ev.stopPropagation();
+            menu.style.display = 'none';
+            if (item.dataset.a === 'edit') {
+                if (typeof openPassiveDeviceForm === 'function') {
+                    openPassiveDeviceForm({ id: passiveId, onSaved: () => invalidateNodeRacks(nodeId) });
+                }
+            } else if (confirm('Удалить пассивное устройство вместе с настройками портов?')) {
+                const fd = new FormData();
+                fd.append('id', passiveId);
+                fetch('?ajax=delete_passive_device', { method: 'POST', body: fd })
+                    .then(r => r.json())
+                    .then(d => {
+                        if (d.success) {
+                            showToast('Устройство удалено', 'success');
+                            invalidateNodeRacks(nodeId);
+                            toggleNodeRacks(nodeId, { open: true });
+                        } else showToast(d.error || 'Ошибка удаления', 'error');
+                    })
+                    .catch(() => showToast('Ошибка сети', 'error'));
+            }
+        };
+    });
+}
+
+/** Подсветка блока, из чьего меню открыли секцию. */
+function highlightRackDevice(container, equipmentId) {
+    container.querySelectorAll('.compact-rack-device.highlight')
+             .forEach(b => b.classList.remove('highlight'));
+    const block = container.querySelector(`.compact-rack-device[data-equipment-id="${equipmentId}"]`);
+    if (!block) return;
+    block.classList.add('highlight');
+    block.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 // ==================== ОБРАБОТЧИКИ СТРОК ОБОРУДОВАНИЯ ====================
@@ -415,6 +759,7 @@ function handleContextAction(action) {
             case 'add_stack':
                 openAddForm('equipment', null, null, { force_stack: true, node_id: selectedNodeId });
                 break;
+            case 'show_racks': toggleNodeRacks(selectedNodeId); break;
             case 'edit': editNode(selectedNodeId); break;
             case 'move_equipment': openMoveDialogForNode(selectedNodeId); break;
             case 'alerts': openAlertSettings(selectedNodeId); break;
@@ -445,10 +790,14 @@ function handleContextAction(action) {
             case 'checklist': openChecklistAddForm(selectedEquipmentData); break;
             case 'delete': deleteEquipment(selectedEquipmentId); break;
             case 'detailed': showEquipmentDetails(selectedEquipmentId); break;
-            case 'show_rack':
-                if (typeof openRackPanel === 'function') openRackPanel(selectedEquipmentId);
-                else showToast('Функция просмотра стойки недоступна', 'warning');
+            case 'show_rack': {
+                // Стойка больше не открывается выдвижной панелью — раскрываем
+                // секцию шкафов под узлом и подсвечиваем нужное устройство
+                const rackNodeId = selectedEquipmentData?.node_id;
+                if (rackNodeId) toggleNodeRacks(rackNodeId, { open: true, highlight: selectedEquipmentId });
+                else showToast('Устройство не привязано к узлу', 'warning');
                 break;
+            }
         }
     }
     selectedNodeId = null;
@@ -463,6 +812,7 @@ function showNodeContextMenu(event, nodeId, ky) {
     showContextMenu(event.clientX, event.clientY, [
         { text: 'Добавить устройство', action: 'add_equipment', icon: 'assets/icons/add.png' },
         { text: 'Добавить стек', action: 'add_stack', icon: 'assets/icons/add.png' },
+        { text: 'Отобразить стойку(-и)', action: 'show_racks', icon: 'assets/icons/rack.png' },
         { text: 'Редактировать', action: 'edit', icon: 'assets/icons/edit.png' },
         { text: 'Переместить оборудование', action: 'move_equipment', icon: 'assets/icons/move.png' },
         { text: 'Настройка оповещения', action: 'alerts', icon: 'assets/icons/alerts.png' },

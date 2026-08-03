@@ -57,6 +57,7 @@ try {
     // ---------- Шкафы узла ----------
     $stmt = $pdo->prepare("
         SELECT r.id_rack,
+               r.id_node,
                r.name,
                r.status,
                rm.model_name,
@@ -95,13 +96,15 @@ try {
                e.unit_position,
                e.status,
                e.Poe,
+               e.Slot,
                e.serial_number,
                e.group_id,
                ip.ip_address,
                dt.name AS device_type_name,
                dm.name AS model_name,
                v.name  AS vendor_name,
-               eg.hostname AS stack_name
+               eg.hostname AS stack_name,
+               eg.hostname AS stack_hostname
         FROM equipment e
         LEFT JOIN ip_address ip ON e.ip_address = ip.Id
         LEFT JOIN device_types dt ON e.device_type_id = dt.id_type_device
@@ -199,6 +202,7 @@ try {
         $row['unit_start'] = $parsed ? $parsed[0] : null;   // начальный юнит
         $row['unit_size']  = $parsed ? $parsed[1] : 1;      // сколько юнитов занимает
         $row['Poe']        = (int)$row['Poe'];
+        $row['Slot']       = $row['Slot'] !== null ? (int)$row['Slot'] : null;
         $row['stack_id']   = $row['group_id'] !== null ? (int)$row['group_id'] : null;
         $row['id']         = (int)$row['id'];
 
@@ -229,6 +233,7 @@ try {
 
     foreach ($racks as &$rack) {
         $rack['id_rack']  = (int)$rack['id_rack'];
+        $rack['id_node']  = (int)$rack['id_node'];
         $rack['height_u'] = (int)($rack['height_u'] ?: 42);   // если модель не задана — стандартные 42U
 
         // Читаемое расположение шкафа (для подписи вкладки)

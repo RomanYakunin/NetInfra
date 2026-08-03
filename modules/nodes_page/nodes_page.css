@@ -59,6 +59,119 @@ tr.equipment-detail-row.visible { display: table-row; }
 tr.equipment-detail-row td {
     padding: 0; border-bottom: 2px solid var(--accent); background: var(--bg-card);
 }
+
+/* ============================================================
+   КОМПАКТНЫЕ ШКАФЫ ПОД СТРОКОЙ УЗЛА
+   Юниты идут снизу вверх: 1U внизу, максимальный — вверху.
+   ============================================================ */
+tr.rack-detail-row { display: none; }
+tr.rack-detail-row.visible { display: table-row; }
+tr.rack-detail-row td {
+    padding: 0; border-bottom: 2px solid var(--accent); background: var(--bg-card);
+}
+
+.node-racks { padding: 0.8rem 1rem; }
+.node-racks-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 0.6rem;
+}
+.node-racks-head .nested-title { margin-bottom: 0; }
+.node-racks-tools { display: flex; gap: 0.2rem; }
+.node-racks-btn {
+    background: transparent; border: none; cursor: pointer;
+    color: var(--text-secondary); font-size: 0.9rem; line-height: 1;
+    padding: 0.2rem 0.4rem; border-radius: 4px;
+}
+.node-racks-btn:hover { background: var(--table-hover); color: var(--accent); }
+
+/* Шкафы стоят друг за другом; при нехватке места — горизонтальная прокрутка */
+.node-racks-strip {
+    display: flex; align-items: flex-start; gap: 1rem;
+    max-height: 560px; overflow: auto; padding-bottom: 0.4rem;
+}
+
+/* Без overflow: иначе заголовок не прилипнет при прокрутке высокого шкафа */
+.compact-rack {
+    flex: 0 0 240px;
+    border: 1px solid var(--border-color); border-radius: 8px;
+    background: var(--bg-card);
+}
+.compact-rack-title {
+    padding: 0.45rem 0.6rem;
+    background: var(--bg-sidebar);
+    border-bottom: 1px solid var(--border-color);
+    border-radius: 7px 7px 0 0;
+    position: sticky; top: 0; z-index: 3;
+}
+.compact-rack-name {
+    display: block; font-weight: 600; font-size: 0.8rem; color: var(--accent);
+}
+.compact-rack-sub {
+    display: block; font-size: 0.68rem; color: var(--text-secondary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.compact-rack-body { position: relative; }
+.compact-rack-unit {
+    position: relative; box-sizing: border-box;
+    border-bottom: 1px dashed var(--border-color);
+}
+.compact-rack-unit:last-child { border-bottom: none; }
+.compact-rack-unum {
+    position: absolute; left: 0; top: 0; width: 24px;
+    text-align: center; font-size: 0.58rem; line-height: 22px;
+    color: var(--text-secondary); opacity: 0.5; user-select: none;
+}
+
+.compact-rack-device {
+    position: absolute; left: 26px; right: 4px;
+    display: flex; flex-direction: column; justify-content: center;
+    box-sizing: border-box; padding: 1px 6px;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border-color);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px; cursor: pointer; overflow: hidden;
+    font-size: 0.7rem; line-height: 1.2;
+    transition: box-shadow 0.15s, border-color 0.15s;
+}
+.compact-rack-device:hover { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.compact-rack-device.highlight {
+    box-shadow: 0 0 0 2px var(--accent); border-color: var(--accent);
+}
+
+/* Пассивное оборудование — темнее и без акцентной полосы */
+.compact-rack-device.passive {
+    background: rgba(0, 0, 0, 0.22);
+    border-left-color: #6b7280;
+}
+
+/* В одном юните всё умещается только в одну строку */
+.compact-rack-device.one-u {
+    flex-direction: row; align-items: center; gap: 6px; font-size: 0.65rem;
+}
+.compact-rack-device.one-u .crd-meta { margin-left: auto; text-align: right; }
+
+.crd-main {
+    display: flex; align-items: center; gap: 4px;
+    font-weight: 600; color: var(--text-primary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.crd-meta {
+    color: var(--text-secondary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.crd-dot {
+    flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%;
+    background: #9ca3af;
+}
+.crd-dot.active   { background: #22c55e; }
+.crd-dot.partial  { background: #f59e0b; }
+.crd-dot.inactive { background: #9ca3af; }
+.crd-slot {
+    flex: 0 0 auto; font-size: 0.6rem; font-weight: 600;
+    padding: 0 4px; border-radius: 8px;
+    background: rgba(0, 180, 216, 0.2); color: var(--accent);
+}
 .nested-container { padding: 0.8rem 1rem; max-height: 350px; overflow-y: auto; }
 .nested-container .nested-title { font-weight: 600; margin-bottom: 0.6rem; color: var(--accent); font-size: 0.85rem; }
 .nested-container table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
