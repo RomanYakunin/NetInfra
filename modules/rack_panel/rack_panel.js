@@ -162,6 +162,8 @@
 
         bindTabs();
         bindDeviceEvents();
+        bindResizeHandles();   // перетаскивание границ блока
+        bindEmptySlotMenu();   // ПКМ по свободному юниту
         scrollToHighlighted();
     }
 
@@ -185,6 +187,18 @@
 
         // Оборудование без позиции — покажем отдельным списком под стойкой
         const unplaced = equipment.filter(eq => !eq.unit_start);
+
+        // Состав стеков: id стека → участники, отсортированные по слоту.
+        // Нужно, чтобы в блоке стека показать «Слот 1: host1 · Слот 2: host2».
+        const stackMembers = {};
+        equipment.forEach(eq => {
+            if (eq.stack_id === null || eq.stack_id === undefined) return;
+            if (!stackMembers[eq.stack_id]) stackMembers[eq.stack_id] = [];
+            stackMembers[eq.stack_id].push(eq);
+        });
+        Object.keys(stackMembers).forEach(k => {
+            stackMembers[k].sort((a, b) => (parseInt(a.Slot, 10) || 0) - (parseInt(b.Slot, 10) || 0));
+        });
 
         let html = '<div class="rack-frame">';
         html += '<div class="rack-grid">';
@@ -226,12 +240,23 @@
                 badges.push(`<span class="rack-badge slot" title="Слот в стеке">S${eq.Slot}</span>`);
             }
 
+            // Часть стека стоит в другом шкафу — подсказываем, где именно
+            const otherRacks = Array.isArray(eq.other_racks) ? eq.other_racks : [];
+            const otherHtml = otherRacks.length
+                ? `<div class="rack-device-elsewhere" title="${esc('Другие устройства стека: ' + otherRacks.join('; '))}">↗ в другом шкафу: ${esc(otherRacks.join('; '))}</div>`
+                : '';
+
+            // Патч-панель и оптический кросс рисуем портами, а не текстом
+            const portsHtml = renderPanelPorts(eq, size);
+
             html += `
-                <div class="rack-device${isHighlight ? ' highlight' : ''}${isStack ? ' in-stack' : ''}"
+                <div class="rack-device${isHighlight ? ' highlight' : ''}${isStack ? ' in-stack' : ''}${portsHtml ? ' is-panel' : ''}"
                      style="grid-row: ${rowStart} / span ${size}; background:${c.bg}; border-color:${c.border};"
                      data-equip-id="${eq.id}"
-                     data-unit="${eq.unit_start}"
+                     data-unit-start="${eq.unit_start}"
+                     data-unit-size="${size}"
                      title="${esc(eq.hostname || '')} — ${esc(eq.device_type_name || '')}">
+                    <div class="rack-resize-handle top" data-edge="top" title="Потяните, чтобы изменить занимаемые юниты"></div>
                     <div class="rack-device-main">
                         <span class="rack-device-name">${esc(eq.hostname || 'Без имени')}</span>
                         <span class="rack-device-badges">${badges.join('')}</span>
@@ -240,7 +265,11 @@
                         ${eq.ip_address ? `<span class="rack-device-ip">${esc(eq.ip_address)}</span>` : ''}
                         ${meta.length ? `<span class="rack-device-meta">${meta.join(' · ')}</span>` : ''}
                     </div>
+                    ${portsHtml}
                     ${isStack ? `<div class="rack-device-stack">📦 ${esc(eq.stack_name || 'стек')}</div>` : ''}
+                    ${isStack ? renderStackSlots(stackMembers[eq.stack_id], eq.id) : ''}
+                    ${otherHtml}
+                    <div class="rack-resize-handle bottom" data-edge="bottom" title="Потяните, чтобы изменить занимаемые юниты"></div>
                 </div>`;
         }
 
@@ -276,6 +305,251 @@
         });
         html += '</div>';
         return html;
+    }
+
+    /**
+     * Состав стека внутри блока: «Слот 1: host1 · Слот 2: host2».
+     * Текущее устройство выделяем, чтобы было видно, какое из них это.
+     *
+     * @param {Array}  members  участники стека в этом шкафу (уже по слотам)
+     * @param {number} selfId   id устройства, в блоке которого рисуем
+     */
+    function renderStackSlots(members, selfId) {
+        if (!Array.isArray(members) || members.length < 2) return '';
+
+        const parts = members.map(m => {
+            const slot = (m.Slot !== null && m.Slot !== undefined && m.Slot !== '')
+                ? 'Слот ' + esc(m.Slot) : '—';
+            const name = esc(m.hostname || 'без имени');
+            const cls = m.id === selfId ? ' class="self"' : '';
+            return '<span' + cls + '>' + slot + ': ' + name + '</span>';
+        });
+
+        return '<div class="rack-device-slots" title="Состав стека">' + parts.join(' · ') + '</div>';
+    }
+
+    // ---------- Патч-панели и оптические кроссы ----------
+    // Данных о портах в БД пока нет — рисуем стилизованное представление
+    // по типу устройства: медные порты квадратные, оптические круглые.
+    const PANEL_TYPES = {
+        'Патч-панель':      { ports: 24, shape: 'copper', label: 'RJ45' },
+        'Оптический кросс': { ports: 12, shape: 'optic',  label: 'LC' },
+    };
+
+    /**
+     * Возвращает разметку портов, если устройство — панель. Иначе пустую строку.
+     * @param {Object} eq   устройство
+     * @param {number} size сколько юнитов занимает (влияет на число рядов)
+     */
+    function renderPanelPorts(eq, size) {
+        const cfg = PANEL_TYPES[eq.device_type_name];
+        if (!cfg) return '';
+
+        // На 1U помещается один ряд портов, на 2U и больше — два
+        const rows = size >= 2 ? 2 : 1;
+        const total = cfg.ports * rows;
+
+        let html = '<div class="rack-ports ' + cfg.shape + '" data-ports="' + total + '">';
+        for (let i = 1; i <= total; i++) {
+            // Реальных данных о подключении нет — показываем нейтральные порты
+            html += '<span class="rack-port" title="' + esc(cfg.label) + ' порт ' + i + '">' + i + '</span>';
+        }
+        html += '</div>';
+        return html;
+    }
+
+    // ---------- Изменение занимаемых юнитов перетаскиванием ----------
+    let resizeState = null;
+
+    function bindResizeHandles() {
+        // Пользователю без прав менять размещение нельзя
+        if (typeof canEdit === 'function' && !canEdit()) {
+            document.querySelectorAll('#panelBody .rack-resize-handle')
+                .forEach(h => { h.style.display = 'none'; });
+            return;
+        }
+
+        document.querySelectorAll('#panelBody .rack-resize-handle').forEach(handle => {
+            handle.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const block = handle.closest('.rack-device');
+                const grid = document.querySelector('#panelBody .rack-grid');
+                if (!block || !grid) return;
+
+                // Высота одного юнита нужна, чтобы переводить пиксели в юниты
+                const rack = (rackData.racks || []).find(r => r.id_rack === activeRackId);
+                const height = rack ? rack.height_u : 42;
+                const unitPx = grid.getBoundingClientRect().height / height;
+
+                resizeState = {
+                    block: block,
+                    edge: handle.dataset.edge,
+                    equipId: parseInt(block.dataset.equipId, 10),
+                    startY: e.clientY,
+                    origStart: parseInt(block.dataset.unitStart, 10),
+                    origSize: parseInt(block.dataset.unitSize, 10),
+                    unitPx: unitPx > 0 ? unitPx : 28,
+                    height: height,
+                    curStart: parseInt(block.dataset.unitStart, 10),
+                    curSize: parseInt(block.dataset.unitSize, 10),
+                    conflict: false
+                };
+                document.body.classList.add('rack-resizing');
+            });
+        });
+    }
+
+    /** Занят ли диапазон другим устройством этого шкафа. */
+    function rangeConflicts(from, to, exceptId) {
+        const rack = (rackData.racks || []).find(r => r.id_rack === activeRackId);
+        if (!rack) return false;
+        return (rack.equipment || []).some(other => {
+            if (other.id === exceptId || !other.unit_start) return false;
+            const oFrom = other.unit_start;
+            const oTo = other.unit_start + (other.unit_size || 1) - 1;
+            return from <= oTo && oFrom <= to;
+        });
+    }
+
+    function onResizeMove(e) {
+        if (!resizeState) return;
+        const st = resizeState;
+
+        const deltaUnits = Math.round((e.clientY - st.startY) / st.unitPx);
+        let newStart = st.origStart;
+        let newSize = st.origSize;
+
+        if (st.edge === 'bottom') {
+            newSize = st.origSize + deltaUnits;
+        } else {
+            // Тянем верхнюю границу: сдвигается начало, нижний край на месте
+            newStart = st.origStart + deltaUnits;
+            newSize = st.origSize - deltaUnits;
+        }
+
+        // Держим блок в пределах шкафа
+        if (newSize < 1) newSize = 1;
+        if (newStart < 1) { newSize -= (1 - newStart); newStart = 1; }
+        if (newStart + newSize - 1 > st.height) newSize = st.height - newStart + 1;
+        if (newSize < 1) newSize = 1;
+
+        st.curStart = newStart;
+        st.curSize = newSize;
+
+        // Предпросмотр прямо в сетке + красная рамка при наложении
+        st.block.style.gridRow = newStart + ' / span ' + newSize;
+        const bad = rangeConflicts(newStart, newStart + newSize - 1, st.equipId);
+        st.block.classList.toggle('resize-conflict', bad);
+        st.conflict = bad;
+    }
+
+    async function onResizeEnd() {
+        if (!resizeState) return;
+        const st = resizeState;
+        resizeState = null;
+        document.body.classList.remove('rack-resizing');
+        st.block.classList.remove('resize-conflict');
+
+        // Ничего не изменилось — тихо выходим
+        if (st.curStart === st.origStart && st.curSize === st.origSize) return;
+
+        if (st.conflict) {
+            toast('Юниты заняты другим устройством', 'warning');
+            st.block.style.gridRow = st.origStart + ' / span ' + st.origSize;
+            return;
+        }
+
+        const fd = new FormData();
+        fd.append('equip_id', st.equipId);
+        fd.append('unit_from', st.curStart);
+        fd.append('unit_to', st.curStart + st.curSize - 1);
+
+        try {
+            const resp = await fetch('?ajax=update_rack_unit', { method: 'POST', body: fd });
+            const data = await resp.json();
+            if (data.success) {
+                toast('Юниты обновлены: ' + data.unit_position, 'success');
+                await loadRackData({ node_id: rackData.node_id });
+            } else {
+                toast(data.error || 'Не удалось изменить юниты', 'error');
+                st.block.style.gridRow = st.origStart + ' / span ' + st.origSize;
+            }
+        } catch (e) {
+            toast('Ошибка сети', 'error');
+            st.block.style.gridRow = st.origStart + ' / span ' + st.origSize;
+        }
+    }
+
+    // Слушатели вешаем один раз на документ, а не на каждую перерисовку
+    document.addEventListener('mousemove', onResizeMove);
+    document.addEventListener('mouseup', onResizeEnd);
+
+    // ---------- Контекстное меню на свободном юните ----------
+    function bindEmptySlotMenu() {
+        if (typeof canEdit === 'function' && !canEdit()) return;
+
+        document.querySelectorAll('#panelBody .rack-slot.empty').forEach(slot => {
+            slot.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                showEmptySlotMenu(e, parseInt(slot.dataset.unit, 10));
+            });
+        });
+    }
+
+    /**
+     * Меню «Добавить» с выбором того, что именно поставить в свободный юнит.
+     * Шкаф и юнит передаются в форму заранее заполненными.
+     */
+    function showEmptySlotMenu(e, unit) {
+        const menu = document.getElementById('ctxMenu');
+        if (!menu) return;
+
+        const nodeId = rackData ? rackData.node_id : null;
+        const rackId = activeRackId;
+
+        const openForm = (deviceTypeName) => {
+            if (typeof openAddForm !== 'function') {
+                toast('Форма добавления недоступна', 'warning');
+                return;
+            }
+            openAddForm('equipment', nodeId, null, {
+                node_id: nodeId,
+                id_rack: rackId,
+                unit_position: String(unit),
+                device_type_name: deviceTypeName || null
+            });
+        };
+
+        const items = [
+            { text: '➕ Оборудование',      run: () => openForm(null) },
+            { text: '🔌 Патч-панель',       run: () => openForm('Патч-панель') },
+            { text: '🔵 Оптическую панель', run: () => openForm('Оптический кросс') }
+        ];
+
+        const ul = document.createElement('ul');
+        const head = document.createElement('li');
+        head.className = 'ctx-header';
+        head.textContent = 'Юнит ' + unit + ' — добавить:';
+        ul.appendChild(head);
+
+        items.forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = item.text;
+            li.addEventListener('click', () => { menu.style.display = 'none'; item.run(); });
+            ul.appendChild(li);
+        });
+
+        menu.innerHTML = '';
+        menu.appendChild(ul);
+        menu.style.display = 'block';
+        menu.style.left = Math.min(e.clientX, window.innerWidth - 230) + 'px';
+        menu.style.top = Math.min(e.clientY, window.innerHeight - 180) + 'px';
+
+        const close = () => { menu.style.display = 'none'; document.removeEventListener('click', close); };
+        setTimeout(() => document.addEventListener('click', close), 0);
     }
 
     // ---------- Обработчики ----------

@@ -273,3 +273,135 @@
     border: 2px solid;
     display: inline-block;
 }
+
+/* ============================================================
+   Изменение занимаемых юнитов перетаскиванием
+   ============================================================ */
+.rack-device { position: relative; }
+
+.rack-resize-handle {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 6px;
+    cursor: ns-resize;
+    z-index: 3;
+    /* Полоска проявляется только при наведении, чтобы не шуметь */
+    background: transparent;
+    transition: background 0.12s ease;
+}
+.rack-resize-handle.top    { top: -2px; }
+.rack-resize-handle.bottom { bottom: -2px; }
+.rack-resize-handle:hover  { background: var(--accent); opacity: 0.75; }
+
+/* Во время перетаскивания курсор держим на всей странице,
+   иначе он «слетает» при выходе за пределы полоски */
+body.rack-resizing,
+body.rack-resizing * { cursor: ns-resize !important; user-select: none; }
+
+/* Наложение на занятый юнит */
+.rack-device.resize-conflict {
+    outline: 2px solid var(--danger, #e74c3c);
+    outline-offset: 1px;
+    background: rgba(231, 76, 60, 0.22) !important;
+}
+
+/* ============================================================
+   Состав стека внутри блока (слоты участников)
+   ============================================================ */
+.rack-device-slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 0.35rem;
+    font-size: 0.58rem;
+    line-height: 1.25;
+    color: var(--text-secondary);
+    overflow: hidden;
+}
+/* Устройство, в блоке которого мы находимся */
+.rack-device-slots .self {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+/* ============================================================
+   Отметка «часть стека в другом шкафу»
+   ============================================================ */
+.rack-device-elsewhere {
+    font-size: 0.6rem;
+    color: var(--warning, #f39c12);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ============================================================
+   Патч-панели и оптические кроссы
+   ============================================================ */
+.rack-device.is-panel {
+    /* Панели плотнее обычных блоков: место нужно портам */
+    padding: 0.15rem 0.35rem;
+    justify-content: flex-start;
+    gap: 0.05rem;
+}
+.rack-device.is-panel .rack-device-sub { display: none; }
+
+.rack-ports {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1px;
+    align-content: center;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    padding: 1px 0;
+}
+.rack-port {
+    flex: 1 1 auto;
+    min-width: 9px;
+    max-width: 18px;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.42rem;
+    line-height: 1;
+    color: var(--text-secondary);
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    transition: background 0.12s ease, border-color 0.12s ease;
+}
+.rack-port:hover {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 25%, transparent);
+    color: var(--text-primary);
+}
+
+/* Медные порты (RJ45) — прямоугольные */
+.rack-ports.copper .rack-port { border-radius: 1px; }
+
+/* Оптические порты (LC/SC) — круглые, цвет намекает на коннектор */
+.rack-ports.optic .rack-port {
+    border-radius: 50%;
+    border-color: #4a90d9;
+    background: rgba(74, 144, 217, 0.16);
+    color: transparent;   /* номер на круглом порту не читается — только подсказка */
+}
+.rack-ports.optic .rack-port:hover {
+    background: rgba(74, 144, 217, 0.45);
+    border-color: #2f6fb5;
+}
+
+/* ============================================================
+   Контекстное меню на свободном юните
+   ============================================================ */
+.rack-slot.empty { cursor: context-menu; }
+
+#ctxMenu li.ctx-header {
+    padding: 0.35rem 0.8rem;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-color);
+    cursor: default;
+    pointer-events: none;
+}

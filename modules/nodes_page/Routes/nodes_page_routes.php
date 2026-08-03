@@ -62,6 +62,10 @@ return [
     // ----------------------------- ШКАФЫ -----------------------------
     'add_rack'                => 'modules/nodes_page/api/AddData/add_rack.php',
     'get_node_racks'          => 'modules/nodes_page/api/GetData/get_node_racks.php',
+    // Обработчик принимает и equipment_id, и node_id. Раньше вызывался только
+    // из index.php по условию isset($_GET['equipment_id']), поэтому запрос с
+    // node_id не доходил до него и получал «Unknown AJAX action».
+    'get_rack'                => 'modules/nodes_page/api/GetData/get_rack.php',
     'get_equipment_lldp'      => 'modules/nodes_page/api/GetData/get_equipment_lldp.php',
     'snmp_query'              => 'modules/nodes_page/api/GetData/snmp_query.php',
     'update_rack_unit'        => 'modules/nodes_page/api/UpdateData/update_rack_unit.php',

@@ -128,6 +128,28 @@ try {
         $byRack[(int)$row['id_rack']][] = $row;
     }
 
+    // Подписи шкафов — чтобы в панели можно было сказать, где стоит соседнее
+    // устройство стека («в другом шкафу: ШК-2, ком. 226»)
+    $rackLabels = [];
+    foreach ($racks as $r) {
+        $loc = [];
+        if (!empty($r['building_name'])) $loc[] = $r['building_name'];
+        if (!empty($r['room']))          $loc[] = 'ком. ' . $r['room'];
+        $rackLabels[(int)$r['id_rack']] = ($r['name'] ?: 'Шкаф #' . $r['id_rack'])
+            . ($loc ? ' (' . implode(', ', $loc) . ')' : '');
+    }
+
+    // Для каждого стека — в каких шкафах лежат его участники.
+    // Нужно, чтобы отметить устройства, чьи собратья стоят в другом шкафу.
+    $stackRacks = [];
+    foreach ($equipmentRows as $row) {
+        if ($row['group_id'] === null) continue;
+        $gid = (int)$row['group_id'];
+        $rid = (int)$row['id_rack'];
+        if (!isset($stackRacks[$gid])) $stackRacks[$gid] = [];
+        if (!in_array($rid, $stackRacks[$gid], true)) $stackRacks[$gid][] = $rid;
+    }
+
     foreach ($racks as &$rack) {
         $rack['id_rack']  = (int)$rack['id_rack'];
         $rack['height_u'] = (int)($rack['height_u'] ?: 42);   // если модель не задана — стандартные 42U
@@ -141,6 +163,19 @@ try {
         $rack['location_display'] = implode(', ', $parts);
 
         $rack['equipment'] = $byRack[$rack['id_rack']] ?? [];
+
+        // Отмечаем устройства, часть стека которых стоит в другом шкафу
+        foreach ($rack['equipment'] as &$eqRow) {
+            $eqRow['other_racks'] = [];
+            if ($eqRow['stack_id'] !== null) {
+                foreach (($stackRacks[$eqRow['stack_id']] ?? []) as $rid) {
+                    if ($rid !== $rack['id_rack'] && isset($rackLabels[$rid])) {
+                        $eqRow['other_racks'][] = $rackLabels[$rid];
+                    }
+                }
+            }
+        }
+        unset($eqRow);
     }
     unset($rack);
 

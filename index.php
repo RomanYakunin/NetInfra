@@ -261,10 +261,7 @@ if ($_GET['ajax'] === 'delete_node' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 
-if ($_GET['ajax'] === 'get_rack' && isset($_GET['equipment_id'])) {
-    require_once 'modules/nodes_page/api/GetData/get_rack.php';
-    exit;
-}
+// get_rack обрабатывается через таблицу маршрутов (принимает equipment_id или node_id)
 if ($_GET['ajax'] === 'swap_rack_units' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     require_once 'modules/nodes_page/api/UpdateData/swap_rack_units.php';
     exit;
