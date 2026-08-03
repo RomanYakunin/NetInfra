@@ -787,6 +787,7 @@ switch ($page) {
 
 <!-- Остальные модальные окна -->
 <?php include 'modules/add_form/add_form_modals.php'; ?>
+<?php include 'modules/passive_devices/passive_modals.php'; ?>
 <?php include 'modules/nodes_page/buildings/buildings_modal.php'; ?>
 
 <!-- Модальное окно добавления модуля -->
@@ -1051,6 +1052,8 @@ new Chart(ctx, {
 <!-- 4. Построитель формы узла -->
 <script src="modules/add_form/node_form.js"></script>
 <script src="modules/add_form/rack_form.js"></script>
+<!-- Формы пассивного оборудования — до панели шкафа, она их вызывает -->
+<script src="modules/passive_devices/passive_devices.js"></script>
 <script src="modules/rack_panel/rack_panel.js"></script>
 
 <!-- 5. Построитель досье оборудования (содержит buildEquipmentDossier и вспомогательные функции) -->

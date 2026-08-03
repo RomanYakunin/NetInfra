@@ -9,6 +9,7 @@ let currentWarehouseButtonData = null;
 let editingWarehouseId = null;
 
 let currentWarehouseName = '';   // "Главный корпус (каб. 44)"
+let currentPassiveType = '';     // фильтр слева на вкладке «Прочее»
 
 // В начало файла (после глобальных переменных)
 let selectedWarehouseGroup = null;
@@ -57,6 +58,12 @@ function hideWarehouseCtxMenu() {
 function warehouseHandleContextAction(action) {
     if (!warehouseCtxEquipId) return;
     switch (action) {
+        case 'passive_edit':
+            openWarehousePassiveForm(warehouseCtxEquipId);
+            break;
+        case 'passive_delete':
+            deletePassiveDevice(warehouseCtxEquipId);
+            break;
         case 'edit':
             if (typeof openEditEquipmentForm === 'function') openEditEquipmentForm(warehouseCtxEquipId);
             break;
@@ -124,6 +131,12 @@ function switchTab(tab) {
     document.querySelectorAll('#warehouseTabs a').forEach(a => a.classList.remove('active'));
     const active = document.querySelector(`#warehouseTabs a[data-tab="${tab}"]`);
     if (active) active.classList.add('active');
+
+    // Панель типов относится только к пассивному оборудованию
+    const panel = document.getElementById('warehouseTypePanel');
+    if (panel) panel.style.display = (tab === 'Прочее') ? '' : 'none';
+    if (tab !== 'Прочее') currentPassiveType = '';
+
     updateAddButton();
     loadTableData();
 }
@@ -133,8 +146,19 @@ function updateAddButton() {
     if (!btn) return;
     if (currentTab === 'Телефоны') {
         btn.textContent = '➕ Добавить телефон';
+    } else if (currentTab === 'Прочее') {
+        btn.textContent = '➕ Добавить пассивное устройство';
     } else {
         btn.textContent = '➕ Добавить устройство';
+    }
+}
+
+// Кнопка «Добавить» ведёт на разные формы в зависимости от вкладки
+function warehouseAddClick() {
+    if (currentTab === 'Прочее') {
+        openWarehousePassiveForm();
+    } else {
+        openWarehouseEquipmentForm();
     }
 }
 
@@ -161,6 +185,7 @@ async function loadTableData() {
         warehouse_id: currentWarehouse,
         search: search
     });
+    if (currentTab === 'Прочее') params.set('ptype', currentPassiveType);
     try {
         const resp = await fetch('modules/warehouse_page/warehouse_page.php?' + params.toString());
         const data = await resp.json();
@@ -168,6 +193,8 @@ async function loadTableData() {
             document.getElementById('warehouseTableBody').innerHTML = data.html;
             document.getElementById('warehouseFooter').innerHTML = `<span>Всего устройств на складе: ${data.total_count}</span>`;
             if (data.columns) renderTableHead(data.columns);
+            if (data.type_filters) renderPassiveTypePanel(data.type_filters, data.active_type || '');
+            if (currentTab === 'Прочее') attachPassiveRowHandlers();
             if (String(data.active_warehouse_id) !== String(currentWarehouse)) {
                 applyWarehouseFilter(data.active_warehouse_id);
             }
@@ -177,6 +204,88 @@ async function loadTableData() {
     } catch (err) {
         console.error('Сетевая ошибка:', err);
     }
+}
+
+// ==================== Вкладка «Прочее»: пассивное оборудование ====================
+function renderPassiveTypePanel(filters, activeType) {
+    const list = document.getElementById('warehouseTypeList');
+    if (!list) return;
+    list.innerHTML = '';
+    filters.forEach(f => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'warehouse-type-btn'
+            + (String(f.key) === String(activeType) ? ' active' : '')
+            + (f.count === 0 ? ' empty' : '');
+        btn.dataset.type = f.key;
+        const label = document.createElement('span');
+        label.textContent = f.label;
+        const cnt = document.createElement('span');
+        cnt.className = 'type-count';
+        cnt.textContent = f.count;
+        btn.appendChild(label);
+        btn.appendChild(cnt);
+        btn.onclick = () => applyPassiveTypeFilter(f.key);
+        list.appendChild(btn);
+    });
+}
+
+function applyPassiveTypeFilter(type) {
+    currentPassiveType = type || '';
+    loadTableData();
+}
+
+/** Открывает форму пассивного устройства для текущего склада. */
+function openWarehousePassiveForm(id) {
+    if (!id && currentWarehouse === 'all') {
+        alert('Пожалуйста, выберите конкретный склад.');
+        return;
+    }
+    if (typeof openPassiveDeviceForm !== 'function') {
+        showToast('Модуль пассивного оборудования не загружен', 'error');
+        return;
+    }
+    openPassiveDeviceForm({
+        id: id || null,
+        type: id ? null : (currentPassiveType || 'patch_panel'),
+        warehouse_id: id ? null : currentWarehouse,
+        onSaved: () => loadTableData()
+    });
+}
+
+function deletePassiveDevice(id) {
+    if (!confirm('Удалить устройство вместе с настройками портов?')) return;
+    const fd = new FormData();
+    fd.append('id', id);
+    fetch('?ajax=delete_passive_device', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Устройство удалено', 'success');
+                loadTableData();
+            } else {
+                showToast(data.error || 'Ошибка удаления', 'error');
+            }
+        })
+        .catch(() => showToast('Ошибка сети', 'error'));
+}
+
+/** Клик — редактирование, правая кнопка — меню. */
+function attachPassiveRowHandlers() {
+    document.querySelectorAll('#warehouseTableBody .passive-device-row').forEach(row => {
+        const id = row.dataset.passiveId;
+        if (!id) return;
+        row.onclick = () => openWarehousePassiveForm(id);
+        row.addEventListener('contextmenu', function (e) {
+            e.preventDefault();
+            warehouseCtxEquipId = id;
+            warehouseCtxEquipData = { passive: true, id: id };
+            showWarehouseContextMenu(e.clientX, e.clientY, [
+                { text: '✏️ Редактировать', action: 'passive_edit' },
+                { text: '🗑️ Удалить', action: 'passive_delete' }
+            ]);
+        });
+    });
 }
 
 function renderTableHead(columns) {

@@ -377,19 +377,47 @@ body.rack-resizing * { cursor: ns-resize !important; user-select: none; }
     color: var(--text-primary);
 }
 
-/* Медные порты (RJ45) — прямоугольные */
+/* Медные порты (RJ45) — квадратные */
 .rack-ports.copper .rack-port { border-radius: 1px; }
 
-/* Оптические порты (LC/SC) — круглые, цвет намекает на коннектор */
-.rack-ports.optic .rack-port {
+/* Оптика LC — круглые порты */
+.rack-ports.optic-round .rack-port {
     border-radius: 50%;
     border-color: #4a90d9;
     background: rgba(74, 144, 217, 0.16);
     color: transparent;   /* номер на круглом порту не читается — только подсказка */
 }
-.rack-ports.optic .rack-port:hover {
+/* Оптика SC/FC/ST — прямоугольные порты */
+.rack-ports.optic-square .rack-port {
+    border-radius: 1px;
+    border-color: #4a90d9;
+    background: rgba(74, 144, 217, 0.16);
+    aspect-ratio: 3 / 4;
+}
+.rack-ports.optic-round .rack-port:hover,
+.rack-ports.optic-square .rack-port:hover {
     background: rgba(74, 144, 217, 0.45);
     border-color: #2f6fb5;
+}
+
+/* Занятый порт — виден сразу, без наведения */
+.rack-port.connected {
+    background: var(--success, #27ae60) !important;
+    border-color: var(--success, #27ae60) !important;
+    color: #fff;
+}
+.rack-ports.optic-round .rack-port.connected,
+.rack-ports.optic-square .rack-port.connected { color: transparent; }
+.rack-port { cursor: pointer; }
+
+/* Пассивное устройство: чуть иная подача, чем у активного */
+.rack-device.is-passive { border-style: solid; }
+.rack-badge.ports {
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 0.2rem;
+    padding: 0 0.2rem;
+    font-size: 0.58rem;
 }
 
 /* ============================================================

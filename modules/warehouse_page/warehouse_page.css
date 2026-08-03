@@ -22,6 +22,44 @@
     width: 32px; height: 32px; display: inline-flex; align-items: center;
     justify-content: center; padding: 0; border: none;
 }
+/* Таблица + боковая панель типов (вкладка «Прочее») */
+.warehouse-content { display: flex; align-items: flex-start; gap: 1rem; }
+.warehouse-content .warehouse-table { flex: 1; min-width: 0; }
+
+.warehouse-type-panel {
+    flex: 0 0 210px;
+    background: var(--bg-card);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 0.8rem 0.6rem;
+}
+.warehouse-type-panel .type-panel-title {
+    font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em;
+    color: var(--text-secondary); font-weight: 600;
+    padding: 0 0.6rem 0.6rem;
+}
+.warehouse-type-btn {
+    display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+    width: 100%; text-align: left;
+    background: transparent; border: none; border-radius: 8px;
+    padding: 0.5rem 0.6rem; margin-bottom: 0.15rem;
+    font-size: 0.88rem; color: var(--text-primary); cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+.warehouse-type-btn:hover { background: var(--button-secondary-hover); }
+.warehouse-type-btn.active { background: var(--accent); color: #fff; }
+.warehouse-type-btn .type-count {
+    font-size: 0.78rem; padding: 0.1rem 0.45rem; border-radius: 10px;
+    background: var(--button-secondary-bg); color: var(--text-secondary);
+}
+.warehouse-type-btn.active .type-count { background: rgba(255,255,255,0.25); color: #fff; }
+.warehouse-type-btn.empty { opacity: 0.5; }
+
+@media (max-width: 900px) {
+    .warehouse-content { flex-direction: column; }
+    .warehouse-type-panel { flex: 1 1 auto; width: 100%; }
+}
+
 .warehouse-table { background: var(--bg-card); border-radius: 12px; overflow-x: auto; box-shadow: var(--shadow); margin-bottom: 1rem; }
 .warehouse-table table { width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 800px; }
 .warehouse-table thead th { background: var(--bg-sidebar); padding: 0.8rem 1rem; text-align: left; font-weight: 600; color: var(--text-secondary); border-bottom: 1px solid var(--border-color); white-space: nowrap; }
@@ -72,6 +110,9 @@
     padding: 0.4rem 0.5rem;
     border-bottom: 1px solid var(--border-color);
 }
+.passive-device-row { cursor: pointer; }
+.passive-device-row:hover { background: var(--table-hover); }
+
 .warehouse-group-row {
     cursor: pointer;
 }

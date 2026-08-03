@@ -114,6 +114,83 @@ try {
     $stmt->execute([$nodeId]);
     $equipmentRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    // ---------- Пассивное оборудование в шкафах узла ----------
+    // Патч-панели и кроссы лежат в отдельной таблице, но в шкафу занимают
+    // юниты наравне с активным оборудованием.
+    $passiveRows = [];
+    try {
+        $stmt = $pdo->prepare("
+            SELECT pd.id, pd.rack_id, pd.type, pd.name, pd.model, pd.unit_position,
+                   pd.ports_count, pd.port_type, pd.port_rows, pd.status, pd.serial_number,
+                   v.name AS vendor_name,
+                   (SELECT COUNT(*) FROM passive_device_ports p
+                     WHERE p.device_id = pd.id AND p.is_connected = 1) AS ports_connected
+            FROM passive_devices pd
+            LEFT JOIN vendors v ON pd.vendor_id = v.id_vendor
+            WHERE pd.node_id = ? AND pd.rack_id IS NOT NULL
+            ORDER BY pd.rack_id, pd.unit_position
+        ");
+        $stmt->execute([$nodeId]);
+        $passiveRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        // Таблицы может ещё не быть (миграция не применена) — панель работает без неё
+        $passiveRows = [];
+    }
+
+    // Порты пассивных устройств — для отрисовки и подсказок
+    $portsByDevice = [];
+    if ($passiveRows) {
+        $ids = array_column($passiveRows, 'id');
+        $ph  = implode(',', array_fill(0, count($ids), '?'));
+        try {
+            $stmt = $pdo->prepare("
+                SELECT p.device_id, p.port_number, p.label, p.is_connected, p.fiber_type,
+                       n.KY_number, b.Name_Building AS building_name, l.room,
+                       e.hostname AS equipment_hostname
+                FROM passive_device_ports p
+                LEFT JOIN nodes     n ON p.destination_node_id     = n.id_node
+                LEFT JOIN Buildings b ON p.destination_building_id = b.Id
+                LEFT JOIN locations l ON p.destination_location_id = l.id_location
+                LEFT JOIN equipment e ON p.destination_equipment_id = e.id
+                WHERE p.device_id IN ($ph)
+                ORDER BY p.device_id, p.port_number
+            ");
+            $stmt->execute($ids);
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $p) {
+                // Читаемое направление для подсказки над портом
+                $parts = [];
+                if (!empty($p['KY_number']))          $parts[] = 'КУ-' . $p['KY_number'];
+                if (!empty($p['building_name']))      $parts[] = $p['building_name'];
+                if (!empty($p['room']))               $parts[] = 'ком. ' . $p['room'];
+                if (!empty($p['equipment_hostname'])) $parts[] = $p['equipment_hostname'];
+
+                $portsByDevice[(int)$p['device_id']][] = [
+                    'port_number'  => (int)$p['port_number'],
+                    'label'        => $p['label'],
+                    'is_connected' => (int)$p['is_connected'],
+                    'fiber_type'   => $p['fiber_type'],
+                    'destination'  => implode(', ', $parts),
+                ];
+            }
+        } catch (PDOException $e) {
+            $portsByDevice = [];
+        }
+    }
+
+    $passiveByRack = [];
+    foreach ($passiveRows as $row) {
+        $parsed = parseUnitPosition($row['unit_position']);
+        $row['id']              = (int)$row['id'];
+        $row['unit_start']      = $parsed ? $parsed[0] : null;
+        $row['unit_size']       = $parsed ? $parsed[1] : 1;
+        $row['ports_count']     = (int)$row['ports_count'];
+        $row['port_rows']       = (int)$row['port_rows'];
+        $row['ports_connected'] = (int)$row['ports_connected'];
+        $row['is_passive']      = true;   // по этому флагу панель отличает их от equipment
+        $row['ports']           = $portsByDevice[$row['id']] ?? [];
+        $passiveByRack[(int)$row['rack_id']][] = $row;
+    }
+
     // ---------- Раскладываем оборудование по шкафам ----------
     $byRack = [];
     foreach ($equipmentRows as $row) {
@@ -163,6 +240,7 @@ try {
         $rack['location_display'] = implode(', ', $parts);
 
         $rack['equipment'] = $byRack[$rack['id_rack']] ?? [];
+        $rack['passive']   = $passiveByRack[$rack['id_rack']] ?? [];
 
         // Отмечаем устройства, часть стека которых стоит в другом шкафу
         foreach ($rack['equipment'] as &$eqRow) {

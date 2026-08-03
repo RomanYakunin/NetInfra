@@ -236,6 +236,106 @@ foreach ($items as $eq) {
             $result['columns'] = ($tab === 'Оборудование')
                 ? ['Тип', 'Производитель', 'Модель', 'Кол-во', '']
                 : ['Производитель', 'Модель', 'Кол-во', ''];
+        } elseif ($tab === 'Прочее') {
+            // Пассивное оборудование на складах: патч-панели, кроссы, модули, терминалы
+            require_once dirname(__FILE__, 3) . '/modules/passive_devices/api/passive_helpers.php';
+            $labels  = passiveTypeLabels();
+            $allowed = passiveAllowed();
+
+            $typeFilter = trim($_GET['ptype'] ?? '');
+            if ($typeFilter !== '' && !in_array($typeFilter, $allowed['type'], true)) {
+                $typeFilter = '';
+            }
+
+            // Общие условия для таблицы и для счётчиков слева
+            $base   = " FROM passive_devices pd
+                        LEFT JOIN vendors v ON pd.vendor_id = v.id_vendor
+                        WHERE pd.warehouse_id IS NOT NULL";
+            $common = '';
+            $commonParams = [];
+
+            if ($warehouseId !== 'all' && intval($warehouseId) > 0) {
+                $common .= " AND pd.warehouse_id = ?";
+                $commonParams[] = intval($warehouseId);
+            }
+            if ($search !== '') {
+                $like = '%' . $search . '%';
+                $common .= " AND (pd.name LIKE ? OR pd.model LIKE ? OR pd.serial_number LIKE ?
+                             OR pd.notes LIKE ? OR v.name LIKE ?)";
+                $commonParams = array_merge($commonParams, array_fill(0, 5, $like));
+            }
+
+            $items = [];
+            $counts = [];
+            $tableMissing = false;
+            try {
+                // Счётчики по типам — не зависят от выбранного слева типа,
+                // иначе панель фильтров схлопывалась бы после первого клика
+                $cStmt = $pdo->prepare("SELECT pd.type, COUNT(*) AS cnt" . $base . $common . " GROUP BY pd.type");
+                $cStmt->execute($commonParams);
+                foreach ($cStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                    $counts[$row['type']] = intval($row['cnt']);
+                }
+
+                $sql = "SELECT pd.id, pd.type, pd.name, pd.model, pd.ports_count, pd.port_type,
+                               pd.status, pd.notes, pd.serial_number,
+                               v.name AS vendor_name"
+                       . $base . $common;
+                $params = $commonParams;
+                if ($typeFilter !== '') {
+                    $sql .= " AND pd.type = ?";
+                    $params[] = $typeFilter;
+                }
+                $sql .= " ORDER BY pd.type, v.name, pd.model, pd.name";
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute($params);
+                $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            } catch (PDOException $e) {
+                // Таблица появляется миграцией passive_devices.sql — без неё
+                // вкладка не должна ронять страницу
+                $tableMissing = true;
+            }
+
+            $html = '';
+            if ($tableMissing) {
+                $html = '<tr><td colspan="7" style="text-align:center; padding:2rem;">'
+                      . 'Таблица пассивного оборудования не создана. Примените migrations/passive_devices.sql'
+                      . '</td></tr>';
+            } elseif (empty($items)) {
+                $html = '<tr><td colspan="7" style="text-align:center; padding:2rem;">Нет устройств</td></tr>';
+            } else {
+                foreach ($items as $pd) {
+                    // Наименование и серийник нет в колонках — показываем подсказкой
+                    $tip = $pd['name'];
+                    if (!empty($pd['serial_number'])) $tip .= ' · S/N ' . $pd['serial_number'];
+                    $html .= '<tr class="passive-device-row" data-passive-id="' . intval($pd['id']) . '"'
+                           . ' title="' . htmlspecialchars($tip) . '">';
+                    $html .= '<td>' . htmlspecialchars($labels[$pd['type']] ?? $pd['type']) . '</td>';
+                    $html .= '<td>' . htmlspecialchars($pd['vendor_name'] ?: '—') . '</td>';
+                    $html .= '<td>' . htmlspecialchars($pd['model'] ?: '—') . '</td>';
+                    $html .= '<td>' . (intval($pd['ports_count']) > 0 ? intval($pd['ports_count']) : '—') . '</td>';
+                    $html .= '<td>' . (intval($pd['ports_count']) > 0 ? htmlspecialchars($pd['port_type']) : '—') . '</td>';
+                    $html .= '<td>' . htmlspecialchars($pd['status'] ?? '') . '</td>';
+                    $html .= '<td>' . htmlspecialchars($pd['notes'] ?? '') . '</td>';
+                    $html .= '</tr>';
+                }
+            }
+
+            // Панель фильтров слева
+            $filters = [['key' => '', 'label' => 'Все типы', 'count' => array_sum($counts)]];
+            foreach ($allowed['type'] as $t) {
+                $filters[] = [
+                    'key'   => $t,
+                    'label' => $labels[$t] ?? $t,
+                    'count' => $counts[$t] ?? 0,
+                ];
+            }
+
+            $result['html']         = $html;
+            $result['total_count']  = count($items);
+            $result['columns']      = ['Тип', 'Производитель', 'Модель', 'Кол-во портов', 'Тип портов', 'Статус', 'Примечание'];
+            $result['type_filters'] = $filters;
+            $result['active_type']  = $typeFilter;
         } else {
             $result['html'] = '<tr><td colspan="5" style="text-align:center; padding:2rem;">Раздел в разработке</td></tr>';
         }

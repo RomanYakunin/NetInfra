@@ -11,7 +11,7 @@
             <input type="text" id="warehouseSearch" placeholder="Поиск..." autocomplete="off">
         </div>
         <div class="warehouse-actions">
-            <button class="btn small" id="addDeviceBtn" onclick="openWarehouseEquipmentForm()">➕ Добавить устройство</button>
+            <button class="btn small" id="addDeviceBtn" onclick="warehouseAddClick()">➕ Добавить устройство</button>
         </div>
         <div class="warehouse-actions">
             <button class="btn" onclick="warehouseBuildStack()">🧱 Собрать стек</button>
@@ -37,14 +37,21 @@
         <a href="#" data-tab="Прочее" onclick="switchTab('Прочее'); return false;">Прочее</a>
     </div>
 
-    <!-- Таблица -->
-    <div class="warehouse-table">
-        <table>
-            <thead id="warehouseTableHead"></thead>
-            <tbody id="warehouseTableBody">
-                <!-- AJAX -->
-            </tbody>
-        </table>
+    <!-- Таблица и боковая панель типов (панель только на вкладке «Прочее») -->
+    <div class="warehouse-content">
+        <aside class="warehouse-type-panel" id="warehouseTypePanel" style="display:none;">
+            <div class="type-panel-title">Тип устройства</div>
+            <div id="warehouseTypeList"></div>
+        </aside>
+
+        <div class="warehouse-table">
+            <table>
+                <thead id="warehouseTableHead"></thead>
+                <tbody id="warehouseTableBody">
+                    <!-- AJAX -->
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <div class="warehouse-footer" id="warehouseFooter">

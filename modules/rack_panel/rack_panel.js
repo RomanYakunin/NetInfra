@@ -162,6 +162,7 @@
 
         bindTabs();
         bindDeviceEvents();
+        bindPassiveEvents();   // клик по порту и по блоку пассивного устройства
         bindResizeHandles();   // перетаскивание границ блока
         bindEmptySlotMenu();   // ПКМ по свободному юниту
         scrollToHighlighted();
@@ -173,7 +174,9 @@
      */
     function renderRack(rack) {
         const height = rack.height_u || 42;
-        const equipment = rack.equipment || [];
+        // Активное и пассивное оборудование рисуем в одной сетке: в шкафу
+        // они одинаково занимают юниты. Отличаются флагом is_passive.
+        const equipment = (rack.equipment || []).concat(rack.passive || []);
 
         // Карта: юнит → устройство, которое его занимает
         const occupied = {};
@@ -221,19 +224,32 @@
             if (u !== eq.unit_start) continue;
 
             const rowStart = eq.unit_start;
-            const c = colorFor(eq.device_type_name);
-            const isHighlight = highlightEquipId && eq.id === highlightEquipId;
-            const isStack = !!eq.stack_id;
+            const isPassive = !!eq.is_passive;
+            // Для пассивного оборудования тип берём из его собственного поля
+            const typeName = isPassive
+                ? (PASSIVE_LABELS[eq.type] || 'Пассивное оборудование')
+                : eq.device_type_name;
+            const c = colorFor(typeName);
+            const isHighlight = !isPassive && highlightEquipId && eq.id === highlightEquipId;
+            const isStack = !isPassive && !!eq.stack_id;
 
             const meta = [];
-            if (eq.device_type_name) meta.push(esc(eq.device_type_name));
-            if (eq.model_name) meta.push(esc(eq.model_name));
+            if (typeName) meta.push(esc(typeName));
+            if (eq.model_name || eq.model) meta.push(esc(eq.model_name || eq.model));
 
             const badges = [];
-            if (eq.Poe) badges.push('<span class="rack-badge poe" title="PoE">⚡</span>');
-            badges.push(eq.status === 'active'
-                ? '<span class="rack-badge on" title="Активно">●</span>'
-                : '<span class="rack-badge off" title="Не активно">●</span>');
+            if (isPassive) {
+                // У панелей вместо статуса сети показываем занятость портов
+                if (eq.ports_count > 0) {
+                    badges.push('<span class="rack-badge ports" title="Занято портов">'
+                              + eq.ports_connected + '/' + eq.ports_count + '</span>');
+                }
+            } else {
+                if (eq.Poe) badges.push('<span class="rack-badge poe" title="PoE">⚡</span>');
+                badges.push(eq.status === 'active'
+                    ? '<span class="rack-badge on" title="Активно">●</span>'
+                    : '<span class="rack-badge off" title="Не активно">●</span>');
+            }
             if (size > 1) badges.push(`<span class="rack-badge size">${size}U</span>`);
             // Слот в стеке — важен для идентификации устройства внутри стека
             if (isStack && eq.Slot !== null && eq.Slot !== undefined && eq.Slot !== '') {
@@ -247,18 +263,20 @@
                 : '';
 
             // Патч-панель и оптический кросс рисуем портами, а не текстом
-            const portsHtml = renderPanelPorts(eq, size);
+            const portsHtml = renderPanelPorts(eq);
+            // У пассивного оборудования имя в поле name, у активного — hostname
+            const displayName = isPassive ? (eq.name || 'Без названия') : (eq.hostname || 'Без имени');
 
             html += `
-                <div class="rack-device${isHighlight ? ' highlight' : ''}${isStack ? ' in-stack' : ''}${portsHtml ? ' is-panel' : ''}"
+                <div class="rack-device${isHighlight ? ' highlight' : ''}${isStack ? ' in-stack' : ''}${isPassive ? ' is-passive' : ''}${portsHtml ? ' is-panel' : ''}"
                      style="grid-row: ${rowStart} / span ${size}; background:${c.bg}; border-color:${c.border};"
-                     data-equip-id="${eq.id}"
+                     ${isPassive ? `data-passive-id="${eq.id}"` : `data-equip-id="${eq.id}"`}
                      data-unit-start="${eq.unit_start}"
                      data-unit-size="${size}"
-                     title="${esc(eq.hostname || '')} — ${esc(eq.device_type_name || '')}">
+                     title="${esc(displayName)} — ${esc(typeName || '')}">
                     <div class="rack-resize-handle top" data-edge="top" title="Потяните, чтобы изменить занимаемые юниты"></div>
                     <div class="rack-device-main">
-                        <span class="rack-device-name">${esc(eq.hostname || 'Без имени')}</span>
+                        <span class="rack-device-name">${esc(displayName)}</span>
                         <span class="rack-device-badges">${badges.join('')}</span>
                     </div>
                     <div class="rack-device-sub">
@@ -329,30 +347,58 @@
     }
 
     // ---------- Патч-панели и оптические кроссы ----------
-    // Данных о портах в БД пока нет — рисуем стилизованное представление
-    // по типу устройства: медные порты квадратные, оптические круглые.
-    const PANEL_TYPES = {
-        'Патч-панель':      { ports: 24, shape: 'copper', label: 'RJ45' },
-        'Оптический кросс': { ports: 12, shape: 'optic',  label: 'LC' },
+    // Русские названия типов пассивного оборудования
+    const PASSIVE_LABELS = {
+        patch_panel:   'Патч-панель',
+        optical_panel: 'Оптический кросс',
+        sfp_module:    'SFP-модуль',
+        psu_module:    'Блок питания',
+        terminal:      'Терминал ВКС',
+        other:         'Прочее',
     };
 
+    /** Круглые порты у LC, прямоугольные у SC/FC/ST, квадратные у меди. */
+    function portShapeFor(portType) {
+        if (portType === 'LC') return 'optic-round';
+        if (portType === 'SC' || portType === 'FC' || portType === 'ST') return 'optic-square';
+        return 'copper';
+    }
+
     /**
-     * Возвращает разметку портов, если устройство — панель. Иначе пустую строку.
-     * @param {Object} eq   устройство
-     * @param {number} size сколько юнитов занимает (влияет на число рядов)
+     * Порты пассивного устройства. Рисуются по реальным данным из
+     * passive_devices / passive_device_ports: количество, тип коннектора,
+     * занятость и направление каждого порта.
+     *
+     * @param {Object} eq устройство (is_passive === true)
      */
-    function renderPanelPorts(eq, size) {
-        const cfg = PANEL_TYPES[eq.device_type_name];
-        if (!cfg) return '';
+    function renderPanelPorts(eq) {
+        if (!eq.is_passive) return '';
+        const total = parseInt(eq.ports_count, 10) || 0;
+        if (total <= 0) return '';
 
-        // На 1U помещается один ряд портов, на 2U и больше — два
-        const rows = size >= 2 ? 2 : 1;
-        const total = cfg.ports * rows;
+        // Данные портов приходят массивом; раскладываем по номеру
+        const byNumber = {};
+        (eq.ports || []).forEach(p => { byNumber[p.port_number] = p; });
 
-        let html = '<div class="rack-ports ' + cfg.shape + '" data-ports="' + total + '">';
+        const shape = portShapeFor(eq.port_type);
+        const rows = Math.max(1, parseInt(eq.port_rows, 10) || 1);
+
+        let html = '<div class="rack-ports ' + shape + '" data-rows="' + rows + '">';
         for (let i = 1; i <= total; i++) {
-            // Реальных данных о подключении нет — показываем нейтральные порты
-            html += '<span class="rack-port" title="' + esc(cfg.label) + ' порт ' + i + '">' + i + '</span>';
+            const p = byNumber[i];
+            const connected = p && p.is_connected;
+
+            // Подсказка: номер, тип коннектора и куда идёт линия
+            const tip = [];
+            tip.push(esc(eq.port_type || '') + ' порт ' + i);
+            if (p && p.label) tip.push(esc(p.label));
+            if (p && p.destination) tip.push('→ ' + esc(p.destination));
+            if (p && p.fiber_type) tip.push(esc(p.fiber_type));
+            if (!connected) tip.push('свободен');
+
+            html += '<span class="rack-port' + (connected ? ' connected' : '') + '"'
+                  + ' data-port="' + i + '" data-device-id="' + eq.id + '"'
+                  + ' title="' + tip.join(' · ') + '">' + i + '</span>';
         }
         html += '</div>';
         return html;
@@ -360,6 +406,9 @@
 
     // ---------- Изменение занимаемых юнитов перетаскиванием ----------
     let resizeState = null;
+    // После отпускания границы браузер шлёт click на блок устройства.
+    // Метка времени гасит именно этот клик, чтобы не открывалось досье.
+    let suppressClickUntil = 0;
 
     function bindResizeHandles() {
         // Пользователю без прав менять размещение нельзя
@@ -452,6 +501,9 @@
         document.body.classList.remove('rack-resizing');
         st.block.classList.remove('resize-conflict');
 
+        // Гасим click, который браузер пришлёт сразу после mouseup
+        suppressClickUntil = Date.now() + 400;
+
         // Ничего не изменилось — тихо выходим
         if (st.curStart === st.origStart && st.curSize === st.origSize) return;
 
@@ -486,6 +538,106 @@
     document.addEventListener('mousemove', onResizeMove);
     document.addEventListener('mouseup', onResizeEnd);
 
+    // ---------- Пассивное оборудование: клики по портам и блоку ----------
+    function bindPassiveEvents() {
+        // Клик по порту — форма назначения направления
+        document.querySelectorAll('#panelBody .rack-port').forEach(port => {
+            port.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (Date.now() < suppressClickUntil) return;   // клик после перетаскивания
+                if (typeof canEdit === 'function' && !canEdit()) return;
+
+                const deviceId = parseInt(port.dataset.deviceId, 10);
+                const portNum  = parseInt(port.dataset.port, 10);
+                if (!deviceId || !portNum) return;
+
+                if (typeof openPassivePortForm === 'function') {
+                    openPassivePortForm(deviceId, portNum, () => refreshRackPanel());
+                } else {
+                    toast('Форма настройки порта недоступна', 'warning');
+                }
+            });
+        });
+
+        // Клик по блоку пассивного устройства (мимо портов) — редактирование
+        document.querySelectorAll('#panelBody .rack-device.is-passive').forEach(el => {
+            el.addEventListener('click', (e) => {
+                if (e.target.closest('.rack-port')) return;      // порт обработан выше
+                if (e.target.closest('.rack-resize-handle')) return;
+                e.stopPropagation();
+                if (Date.now() < suppressClickUntil) return;
+
+                const id = parseInt(el.dataset.passiveId, 10);
+                if (!id) return;
+                if (typeof openPassiveDeviceForm === 'function') {
+                    openPassiveDeviceForm({ id: id, onSaved: () => refreshRackPanel() });
+                }
+            });
+
+            // ПКМ по пассивному устройству — удаление
+            el.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (typeof canEdit === 'function' && !canEdit()) return;
+                const id = parseInt(el.dataset.passiveId, 10);
+                const name = el.querySelector('.rack-device-name')?.textContent || '';
+                showPassiveContextMenu(e, id, name);
+            });
+        });
+    }
+
+    /** Меню действий над пассивным устройством. */
+    function showPassiveContextMenu(e, id, name) {
+        const menu = document.getElementById('ctxMenu');
+        if (!menu || !id) return;
+
+        const items = [
+            { text: '✎ Редактировать', run: () => {
+                if (typeof openPassiveDeviceForm === 'function') {
+                    openPassiveDeviceForm({ id: id, onSaved: () => refreshRackPanel() });
+                }
+            }},
+            { text: '🗑 Удалить', run: async () => {
+                if (!confirm('Удалить «' + name + '»? Порты и их назначения будут удалены.')) return;
+                const fd = new FormData();
+                fd.append('id', id);
+                try {
+                    const data = await (await fetch('?ajax=delete_passive_device', { method: 'POST', body: fd })).json();
+                    if (data.success) { toast('Устройство удалено', 'success'); refreshRackPanel(); }
+                    else toast(data.error || 'Ошибка удаления', 'error');
+                } catch (err) { toast('Ошибка сети', 'error'); }
+            }}
+        ];
+
+        const ul = document.createElement('ul');
+        const head = document.createElement('li');
+        head.className = 'ctx-header';
+        head.textContent = name;
+        ul.appendChild(head);
+        items.forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = item.text;
+            li.addEventListener('click', () => { menu.style.display = 'none'; item.run(); });
+            ul.appendChild(li);
+        });
+
+        menu.innerHTML = '';
+        menu.appendChild(ul);
+        menu.style.display = 'block';
+        menu.style.left = Math.min(e.clientX, window.innerWidth - 230) + 'px';
+        menu.style.top = Math.min(e.clientY, window.innerHeight - 180) + 'px';
+
+        const close = () => { menu.style.display = 'none'; document.removeEventListener('click', close); };
+        setTimeout(() => document.addEventListener('click', close), 0);
+    }
+
+    /** Перерисовка панели по текущему узлу — после любых изменений. */
+    function refreshRackPanel() {
+        if (rackData && rackData.node_id) {
+            return loadRackData({ node_id: rackData.node_id });
+        }
+    }
+
     // ---------- Контекстное меню на свободном юните ----------
     function bindEmptySlotMenu() {
         if (typeof canEdit === 'function' && !canEdit()) return;
@@ -510,7 +662,8 @@
         const nodeId = rackData ? rackData.node_id : null;
         const rackId = activeRackId;
 
-        const openForm = (deviceTypeName) => {
+        // Активное оборудование — обычная форма
+        const openEquipmentForm = () => {
             if (typeof openAddForm !== 'function') {
                 toast('Форма добавления недоступна', 'warning');
                 return;
@@ -518,15 +671,31 @@
             openAddForm('equipment', nodeId, null, {
                 node_id: nodeId,
                 id_rack: rackId,
+                unit_position: String(unit)
+            });
+        };
+
+        // Пассивное оборудование — своя форма и своя таблица
+        const openPassive = (type) => {
+            if (typeof openPassiveDeviceForm !== 'function') {
+                toast('Форма пассивного оборудования недоступна', 'warning');
+                return;
+            }
+            openPassiveDeviceForm({
+                type: type,
+                node_id: nodeId,
+                rack_id: rackId,
                 unit_position: String(unit),
-                device_type_name: deviceTypeName || null
+                onSaved: () => refreshRackPanel()
             });
         };
 
         const items = [
-            { text: '➕ Оборудование',      run: () => openForm(null) },
-            { text: '🔌 Патч-панель',       run: () => openForm('Патч-панель') },
-            { text: '🔵 Оптическую панель', run: () => openForm('Оптический кросс') }
+            { text: '➕ Оборудование',      run: openEquipmentForm },
+            { text: '🔌 Патч-панель',       run: () => openPassive('patch_panel') },
+            { text: '🔵 Оптическую панель', run: () => openPassive('optical_panel') },
+            { text: '⚡ Блок питания',      run: () => openPassive('psu_module') },
+            { text: '📺 Терминал ВКС',      run: () => openPassive('terminal') }
         ];
 
         const ul = document.createElement('ul');
@@ -568,9 +737,12 @@
             const equipId = parseInt(el.dataset.equipId, 10);
             if (!equipId) return;
 
-            // Клик — подробная карточка оборудования
+            // Клик — подробная карточка оборудования.
+            // После перетаскивания границы браузер шлёт click на блок,
+            // из-за чего открывалось досье. Такой клик гасим.
             el.addEventListener('click', (e) => {
                 e.stopPropagation();
+                if (Date.now() < suppressClickUntil) return;
                 if (typeof showEquipmentDetails === 'function') {
                     showEquipmentDetails(equipId);
                 } else {
