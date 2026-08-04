@@ -19,31 +19,37 @@
     <!-- Навигационное меню -->
     <nav class="sidebar-nav" id="sidebarNav">
         <!-- Секция 1: Мониторинг -->
-        <div class="nav-section">
-            <div class="nav-section-title">
-                <span class="section-icon">📊</span> 
+        <div class="nav-section" data-section="monitoring">
+            <button type="button" class="nav-section-title" aria-expanded="true">
+                <span class="section-icon">📊</span>
                 <span class="section-label">Мониторинг</span>
+                <span class="section-chevron">▾</span>
+            </button>
+            <div class="nav-section-body">
+                <a href="?page=dashboard" class="nav-item <?= $page=='dashboard' ? 'active' : '' ?>">
+                    <span class="nav-icon">📈</span> <span class="nav-label">Дашборд</span>
+                </a>
+                <a href="?page=nodes" class="nav-item <?= $page=='nodes' ? 'active' : '' ?>">
+                    <span class="nav-icon">🖧</span> <span class="nav-label">Узлы</span>
+                </a>
             </div>
-            <a href="?page=dashboard" class="nav-item <?= $page=='dashboard' ? 'active' : '' ?>">
-                <span class="nav-icon">📈</span> <span class="nav-label">Дашборд</span>
-            </a>
-            <a href="?page=nodes" class="nav-item <?= $page=='nodes' ? 'active' : '' ?>">
-                <span class="nav-icon">🖧</span> <span class="nav-label">Узлы</span>
-            </a>
         </div>
 
         <!-- Секция 2: Инвентаризация -->
-        <div class="nav-section">
-            <div class="nav-section-title">
-                <span class="section-icon">📦</span> 
+        <div class="nav-section" data-section="inventory">
+            <button type="button" class="nav-section-title" aria-expanded="true">
+                <span class="section-icon">📦</span>
                 <span class="section-label">Инвентаризация</span>
+                <span class="section-chevron">▾</span>
+            </button>
+            <div class="nav-section-body">
+                <a href="?page=warehouse" class="nav-item <?= $page=='warehouse' ? 'active' : '' ?>">
+                    <span class="nav-icon">🏬</span> <span class="nav-label">Склад</span>
+                </a>
+                <a href="?page=checklist" class="nav-item <?= $page=='checklist' ? 'active' : '' ?>">
+                    <span class="nav-icon">✅</span> <span class="nav-label">Чек-лист</span>
+                </a>
             </div>
-            <a href="?page=warehouse" class="nav-item <?= $page=='warehouse' ? 'active' : '' ?>">
-                <span class="nav-icon">🏬</span> <span class="nav-label">Склад</span>
-            </a>
-            <a href="?page=checklist" class="nav-item <?= $page=='checklist' ? 'active' : '' ?>">
-                <span class="nav-icon">✅</span> <span class="nav-label">Чек-лист</span>
-            </a>
         </div>
     </nav>
 
@@ -51,20 +57,23 @@
     <div class="sidebar-footer">
         <?php if (($_SESSION['role'] ?? '') === 'admin'): ?>
         <!-- Администрирование (только для админа) -->
-        <div class="nav-section">
-            <div class="nav-section-title">
+        <div class="nav-section" data-section="admin">
+            <button type="button" class="nav-section-title" aria-expanded="true">
                 <span class="section-icon">⚙️</span>
                 <span class="section-label">Администрирование</span>
+                <span class="section-chevron">▾</span>
+            </button>
+            <div class="nav-section-body">
+                <a href="?page=database_manager" class="nav-item <?= $page=='database_manager' ? 'active' : '' ?>">
+                    <span class="nav-icon">🗄️</span> <span class="nav-label">База знаний</span>
+                </a>
+                <a href="?page=users" class="nav-item <?= $page=='users' ? 'active' : '' ?>">
+                    <span class="nav-icon">👥</span> <span class="nav-label">Пользователи</span>
+                </a>
+                <a href="?page=journal" class="nav-item <?= $page=='journal' ? 'active' : '' ?>">
+                    <span class="nav-icon">📋</span> <span class="nav-label">Журнал</span>
+                </a>
             </div>
-            <a href="?page=database_manager" class="nav-item <?= $page=='database_manager' ? 'active' : '' ?>">
-                <span class="nav-icon">🗄️</span> <span class="nav-label">База знаний</span>
-            </a>
-            <a href="?page=users" class="nav-item <?= $page=='users' ? 'active' : '' ?>">
-                <span class="nav-icon">👥</span> <span class="nav-label">Пользователи</span>
-            </a>
-            <a href="?page=journal" class="nav-item <?= $page=='journal' ? 'active' : '' ?>">
-                <span class="nav-icon">📋</span> <span class="nav-label">Журнал</span>
-            </a>
         </div>
         <?php endif; ?>
 

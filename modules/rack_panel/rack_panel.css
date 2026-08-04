@@ -1,43 +1,30 @@
 /* ============================================================
-   Выдвижная панель стойки (шкафа)
+   Окно визуализации шкафа (стойки)
+
+   Раньше это была выдвижная панель справа — она сдвигала страницу.
+   Теперь модальное окно: ничего не двигает и даёт место на широкую
+   стойку с портами.
+
+   Сама стойка нарисована «как настоящая»: тёмный корпус, монтажные
+   направляющие с отверстиями, лицевые панели оборудования, патч-панели
+   с розетками RJ-45 группами по 6 и оптические кроссы с синими
+   адаптерами. Корпус тёмный в обеих темах — так выглядит железо.
    ============================================================ */
-.right-panel {
-    position: fixed;
-    top: 0; right: 0;
-    height: 100vh;
-    width: 460px;
-    max-width: 92vw;
-    background: var(--bg-card);
-    box-shadow: -4px 0 20px rgba(0,0,0,0.18);
-    transform: translateX(100%);          /* скрыта по умолчанию */
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 1050;
+
+/* Селектор с двумя классами — иначе общее правило .add-form-modal
+   .modal-content с max-width: 700px обрезает окно стойки */
+.add-form-modal.rack-modal .modal-content {
+    width: min(1180px, 96vw);
+    max-width: 96vw;
+    max-height: 92vh;
+    padding: 0;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
-.right-panel.open { transform: translateX(0); }
-
-/* Кнопка-ручка у правого края */
-.panel-tab {
-    position: fixed;
-    right: 0; top: 50%;
-    transform: translateY(-50%);
-    background: var(--accent);
-    color: #fff;
-    padding: 0.7rem 0.85rem;
-    border-radius: 10px 0 0 10px;
-    cursor: pointer;
-    z-index: 1051;
-    box-shadow: -2px 2px 10px rgba(0,0,0,0.25);
-    font-size: 1.05rem;
-    display: flex; align-items: center; gap: 0.3rem;
-    transition: opacity 0.25s, transform 0.25s;
-}
-.panel-tab:hover { transform: translateY(-50%) translateX(-3px); }
-.panel-tab.hidden { opacity: 0; pointer-events: none; }
 
 .panel-header {
-    padding: 0.85rem 1rem;
+    padding: 0.85rem 1.1rem;
     background: var(--bg-header);
     border-bottom: 2px solid var(--border-color);
     font-weight: 600;
@@ -48,7 +35,12 @@
 .panel-close { cursor: pointer; font-size: 1.15rem; color: var(--text-secondary); line-height: 1; }
 .panel-close:hover { color: var(--danger); }
 
-.panel-body { flex: 1; overflow-y: auto; padding: 0.75rem; }
+.panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 1.1rem 1.4rem;
+    min-height: 0;
+}
 
 .rack-placeholder {
     padding: 2rem 1rem;
@@ -66,13 +58,13 @@
     margin-bottom: 0.75rem;
 }
 .rack-tab {
-    flex: 1 1 auto;
-    min-width: 8rem;
+    flex: 0 1 auto;
+    min-width: 9rem;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     gap: 0.1rem;
-    padding: 0.45rem 0.7rem;
+    padding: 0.45rem 0.8rem;
     border-radius: 0.5rem;
     border: 2px solid var(--border-color);
     background: var(--bg-card);
@@ -85,7 +77,7 @@
 .rack-tab:hover { border-color: var(--accent); }
 .rack-tab.active {
     border-color: var(--accent);
-    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    background: rgba(0, 180, 216, 0.12);
     box-shadow: 0 3px 8px rgba(0,0,0,0.12);
 }
 .rack-tab-name { font-size: 0.85rem; font-weight: 600; }
@@ -93,8 +85,8 @@
 
 /* ---------- Характеристики шкафа ---------- */
 .rack-summary {
-    padding: 0.5rem 0.7rem;
-    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.9rem;
     border-radius: 0.5rem;
     background: var(--table-hover, rgba(128,128,128,0.08));
     font-size: 0.78rem;
@@ -103,89 +95,171 @@
 .rack-summary-line { color: var(--text-primary); font-weight: 500; }
 .rack-summary-loc { margin-top: 0.15rem; }
 
-/* ---------- Каркас стойки ---------- */
+
+/* ============================================================
+   КАРКАС СТОЙКИ
+   ============================================================ */
 .rack-frame {
-    border: 3px solid var(--border-color);
-    border-radius: 0.6rem;
-    padding: 0.5rem 0.5rem 0.5rem 0.35rem;
-    background: linear-gradient(180deg,
-        rgba(128,128,128,0.06) 0%,
-        rgba(128,128,128,0.02) 100%);
-    box-shadow: inset 0 2px 8px rgba(0,0,0,0.08);
+    --rack-u: 30px;              /* высота одного юнита */
+    --rack-metal: #26292e;       /* корпус */
+    --rack-metal-2: #33373d;     /* направляющие */
+    --rack-hole: rgba(0,0,0,0.55);
+
+    position: relative;
+    margin: 0 auto;
+    max-width: 900px;
+    padding: 14px 10px 20px;
+    border-radius: 8px 8px 4px 4px;
+    background:
+        linear-gradient(180deg, #3a3e45 0%, var(--rack-metal) 40px, var(--rack-metal) 100%);
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.08),
+        0 8px 26px rgba(0,0,0,0.35);
 }
+
+/* Верхняя крышка с общей высотой шкафа */
+.rack-frame-cap {
+    display: flex; align-items: center; justify-content: center;
+    height: 22px; margin-bottom: 10px;
+    border-radius: 4px;
+    background: linear-gradient(180deg, #474c54, #383c43);
+    color: #cfd4db;
+    font-size: 0.68rem; letter-spacing: 0.12em; font-weight: 600;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+}
+
+/* Ножки снизу — как на схеме */
+.rack-frame-feet {
+    display: flex; justify-content: space-between;
+    margin: 10px 6px -12px;
+}
+.rack-frame-feet span {
+    width: 42px; height: 8px; border-radius: 0 0 3px 3px;
+    background: linear-gradient(180deg, #3f444b, #23262a);
+}
+
+/* Внутренняя часть с монтажными направляющими по краям.
+   Отверстия рисуются градиентом — отдельных элементов не нужно. */
+.rack-inner {
+    position: relative;
+    padding: 6px 16px;
+    border-radius: 3px;
+    background: #1a1c20;
+    box-shadow: inset 0 0 14px rgba(0,0,0,0.65);
+}
+.rack-inner::before,
+.rack-inner::after {
+    content: '';
+    position: absolute; top: 0; bottom: 0;
+    width: 12px;
+    background:
+        repeating-linear-gradient(180deg,
+            transparent 0, transparent 8px,
+            var(--rack-hole) 8px, var(--rack-hole) 12px),
+        linear-gradient(90deg, #40454c, var(--rack-metal-2));
+}
+.rack-inner::before { left: 2px;  border-radius: 2px; }
+.rack-inner::after  { right: 2px; border-radius: 2px; }
 
 /* Сетка: колонка номеров юнитов + колонка содержимого */
 .rack-grid {
     display: grid;
-    grid-template-columns: 2rem 1fr;
-    gap: 2px;
+    grid-template-columns: 26px 1fr;
+    gap: 1px;
     align-items: stretch;
 }
 
-/* Номер юнита */
+/* Номер юнита на направляющей */
 .rack-unit-no {
     grid-column: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.62rem;
-    color: var(--text-secondary);
+    height: var(--rack-u);
+    font-size: 0.58rem;
+    color: #7d858f;
     font-variant-numeric: tabular-nums;
-    min-height: 1.55rem;
     user-select: none;
-    border-right: 1px dashed var(--border-color);
 }
 
-/* Пустой юнит */
+/* Свободный юнит — видно пустое нутро шкафа */
 .rack-slot {
     grid-column: 2;
-    min-height: 1.55rem;
-    border-radius: 0.25rem;
-    background: repeating-linear-gradient(
-        45deg,
-        transparent, transparent 4px,
-        rgba(128,128,128,0.07) 4px, rgba(128,128,128,0.07) 8px
-    );
-    border: 1px solid transparent;
-    transition: background 0.15s;
+    height: var(--rack-u);
+    border-radius: 2px;
+    background:
+        repeating-linear-gradient(90deg,
+            rgba(255,255,255,0.025) 0, rgba(255,255,255,0.025) 2px,
+            transparent 2px, transparent 7px);
+    border: 1px dashed rgba(255,255,255,0.07);
+    transition: background 0.15s, border-color 0.15s;
 }
-.rack-slot.empty:hover { background: rgba(128,128,128,0.14); }
+.rack-slot.empty { cursor: context-menu; }
+.rack-slot.empty:hover {
+    background: rgba(0,180,216,0.14);
+    border-color: rgba(0,180,216,0.5);
+}
 
-/* Блок устройства */
+
+/* ============================================================
+   ЛИЦЕВАЯ ПАНЕЛЬ ОБОРУДОВАНИЯ
+   ============================================================ */
 .rack-device {
     grid-column: 2;
+    position: relative;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 0.1rem;
-    padding: 0.25rem 0.5rem;
-    border: 2px solid;
-    border-radius: 0.35rem;
+    gap: 0.08rem;
+    padding: 0.2rem 0.5rem 0.2rem 0.7rem;
+    border-radius: 3px;
     cursor: pointer;
     overflow: hidden;
-    transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+    color: #e8ecf1;
+    /* Металл лицевой панели: сверху блик, снизу тень */
+    background:
+        linear-gradient(180deg,
+            rgba(255,255,255,0.10) 0%,
+            rgba(255,255,255,0.02) 18%,
+            rgba(0,0,0,0.16) 100%),
+        #2f343b;
+    border: 1px solid #14161a;
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.12),
+        inset 0 -1px 0 rgba(0,0,0,0.4),
+        0 1px 3px rgba(0,0,0,0.5);
+    transition: box-shadow 0.15s, filter 0.15s;
 }
-.rack-device:hover {
-    transform: translateX(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    filter: brightness(1.06);
+/* Цветная полоса слева — тип устройства (цвет приходит из JS) */
+.rack-device::before {
+    content: '';
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 4px;
+    background: var(--dev-accent, #9e9e9e);
 }
+.rack-device:hover { filter: brightness(1.14); box-shadow: 0 3px 12px rgba(0,0,0,0.55); }
 .rack-device.highlight {
     outline: 2px solid var(--accent);
     outline-offset: 1px;
     animation: rackPulse 1.6s ease-in-out 2;
 }
 @keyframes rackPulse {
-    0%, 100% { box-shadow: 0 1px 4px rgba(0,0,0,0.12); }
-    50%      { box-shadow: 0 0 14px 2px var(--accent); }
+    0%, 100% { box-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+    50%      { box-shadow: 0 0 16px 3px var(--accent); }
 }
 
-/* Устройство в составе стека — общая подложка слева */
-.rack-device.in-stack {
-    border-left-width: 6px;
-    border-left-style: double;
+/* Монтажные уши по краям — деталь, по которой узнаётся стоечное железо */
+.rack-device::after {
+    content: '';
+    position: absolute; right: 3px; top: 50%;
+    width: 5px; height: 5px; margin-top: -2.5px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #8d959f, #3a3f46);
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.5);
 }
+
+/* Устройство в составе стека — двойная полоса слева */
+.rack-device.in-stack::before { width: 7px; border-right: 2px solid rgba(0,0,0,0.55); }
 
 .rack-device-main {
     display: flex;
@@ -194,30 +268,50 @@
     gap: 0.4rem;
 }
 .rack-device-name {
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     font-weight: 600;
-    color: var(--text-primary);
+    color: #f2f5f8;
+    letter-spacing: 0.01em;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
-.rack-device-badges { display: flex; gap: 0.25rem; flex-shrink: 0; }
-.rack-badge { font-size: 0.6rem; line-height: 1; }
-.rack-badge.poe  { color: var(--warning, #f39c12); font-weight: 700; }
-.rack-badge.on   { color: var(--success, #27ae60); font-size: 0.75rem; }
-.rack-badge.off  { color: var(--danger, #e74c3c); font-size: 0.75rem; }
+.rack-device-badges { display: flex; align-items: center; gap: 0.25rem; flex-shrink: 0; padding-right: 8px; }
+.rack-badge { font-size: 0.58rem; line-height: 1; }
+.rack-badge.poe  { color: #ffc857; font-weight: 700; }
+/* Индикатор питания/линка — как светодиод на панели */
+.rack-badge.on, .rack-badge.off {
+    width: 7px; height: 7px; border-radius: 50%;
+    display: inline-block; font-size: 0; overflow: hidden;
+}
+.rack-badge.on  { background: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
+.rack-badge.off { background: #6b727a; }
 .rack-badge.size {
-    color: var(--text-secondary);
-    border: 1px solid var(--border-color);
+    color: #aeb6bf;
+    border: 1px solid rgba(255,255,255,0.22);
     border-radius: 0.2rem;
-    padding: 0 0.2rem;
+    padding: 0 0.22rem;
+}
+.rack-badge.slot {
+    color: #0b1116;
+    background: #62d0f0;
+    border-radius: 0.2rem;
+    padding: 0.05rem 0.28rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.rack-badge.ports {
+    color: #aeb6bf;
+    border: 1px solid rgba(255,255,255,0.22);
+    border-radius: 0.2rem;
+    padding: 0 0.22rem;
 }
 
 .rack-device-sub {
     display: flex;
-    gap: 0.4rem;
-    font-size: 0.63rem;
-    color: var(--text-secondary);
+    gap: 0.45rem;
+    font-size: 0.62rem;
+    color: #a7b0ba;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -226,14 +320,260 @@
 .rack-device-meta { overflow: hidden; text-overflow: ellipsis; }
 .rack-device-stack {
     font-size: 0.6rem;
-    color: var(--accent);
+    color: #62d0f0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-/* ---------- Оборудование без указанного юнита ---------- */
-.rack-unplaced { margin-top: 0.8rem; }
+/* Состав стека внутри блока: «Слот 1: host1 · Слот 2: host2» */
+.rack-device-slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 0.35rem;
+    font-size: 0.57rem;
+    line-height: 1.3;
+    color: #98a2ad;
+    overflow: hidden;
+}
+.rack-device-slots .self { color: #62d0f0; font-weight: 700; }
+
+/* Часть стека стоит в другом шкафу */
+.rack-device-elsewhere {
+    font-size: 0.58rem;
+    color: #ffc857;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+/* ============================================================
+   ПАТЧ-ПАНЕЛИ И ОПТИЧЕСКИЕ КРОССЫ
+   Раскладка повторяет настоящую панель: ряды, внутри ряда блоки
+   по 6 портов с маркировочной полосой и номерами.
+   ============================================================ */
+.rack-device.is-panel {
+    padding: 0;
+    gap: 0;
+    justify-content: stretch;
+}
+/* На панели место занимают порты — служебные строки не показываем */
+.rack-device.is-panel .rack-device-sub,
+.rack-device.is-panel .rack-device-stack { display: none; }
+.rack-device.is-panel::after { display: none; }
+
+/* Имя панели ложится поверх лицевой стороны мелким шрифтом */
+.rack-device.is-panel .rack-device-main {
+    position: absolute; left: 0.7rem; top: 2px; right: 0.5rem;
+    z-index: 2; pointer-events: none;
+}
+.rack-device.is-panel .rack-device-name { font-size: 0.58rem; color: #cfd6de; }
+
+.rack-panel-face {
+    display: flex;
+    align-items: stretch;
+    height: 100%;
+    padding: 2px;
+    gap: 3px;
+    border-radius: 2px;
+}
+/* Медная панель — чёрный металл */
+.rack-panel-face.copper { background: linear-gradient(180deg, #23262a, #15171a); }
+/* Оптический кросс — светло-серый корпус, как у ШКОС и ITK */
+.rack-panel-face.optic  { background: linear-gradient(180deg, #d9dcd8, #c2c6c1); }
+.rack-panel-face.sfp    { background: linear-gradient(180deg, #23262a, #15171a); }
+
+/* Монтажное ухо с отверстием */
+.rack-panel-ear {
+    flex: 0 0 9px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.06);
+    position: relative;
+}
+.rack-panel-face.optic .rack-panel-ear { background: rgba(0,0,0,0.10); }
+.rack-panel-ear::before {
+    content: '';
+    position: absolute; left: 50%; top: 50%;
+    width: 4px; height: 7px; margin: -3.5px 0 0 -2px;
+    border-radius: 2px;
+    background: rgba(0,0,0,0.55);
+}
+
+.rack-panel-rows {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; justify-content: space-evenly;
+    gap: 2px;
+}
+.rack-panel-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 6px; min-height: 0; flex: 1;
+}
+
+/* Блок из шести портов (медь) или посадочная секция (оптика) */
+.rack-port-group {
+    flex: 1 1 0; min-width: 0;
+    display: flex; flex-direction: column; justify-content: center; gap: 1px;
+    position: relative;
+}
+/* Маркировочная полоса над блоком розеток */
+.rack-port-strip {
+    height: 3px; border-radius: 1px;
+    background: linear-gradient(180deg, #f2f2ee, #d5d5cd);
+    flex: 0 0 auto;
+}
+
+/* ---- Секция оптического кросса ---- */
+.rack-panel-face.optic .rack-port-group {
+    padding: 1px 3px;
+    border: 1px solid rgba(0,0,0,0.22);
+    border-radius: 2px;
+    background: rgba(255,255,255,0.35);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+}
+/* Секция без единого адаптера — просто пустая планка */
+.rack-panel-face.optic .rack-port-group.is-empty { background: rgba(0,0,0,0.06); }
+/* Добивка ряда: держит ширину, но ничего не рисует */
+.rack-panel-face.optic .rack-port-group.is-spacer {
+    border-color: transparent; background: transparent; box-shadow: none;
+}
+
+/* Пустое посадочное место под адаптер — тёмный проём в планке */
+.rack-port-blank {
+    flex: 1 1 0; min-width: 0;
+    align-self: stretch;
+    margin: 2px 0;
+    background: #2b2f33;
+    border: 1px solid rgba(0,0,0,0.45);
+    border-radius: 1px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
+}
+
+/* Маркировка секции A/B/C/D */
+.rack-section-label {
+    position: absolute; right: 2px; bottom: 0;
+    font-size: 0.42rem; font-weight: 700; line-height: 1;
+    color: #5c615c;
+    user-select: none;
+}
+
+/* Прижимной винт между секциями */
+.rack-panel-screw {
+    flex: 0 0 7px;
+    align-self: center;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ffffff, #c9cdc7 60%, #9aa09a);
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.25);
+}
+
+.rack-port-line { display: flex; gap: 2px; align-items: stretch; flex: 1; min-height: 0; }
+
+.rack-port {
+    flex: 1 1 0; min-width: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 1px;
+    cursor: pointer;
+    position: relative;
+}
+.rack-port-body {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 6px;
+    display: block;
+    transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
+}
+.rack-port-num {
+    flex: 0 0 auto;
+    font-size: 0.42rem;
+    line-height: 1;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: #9aa3ad;
+    user-select: none;
+}
+.rack-panel-face.optic .rack-port-num { color: #4a4f4a; }
+
+/* --- Розетка RJ-45: тёмный проём с вырезом под защёлку сверху --- */
+.rack-panel-face.copper .rack-port-body,
+.rack-panel-face.sfp .rack-port-body {
+    background: #0a0c0e;
+    border: 1px solid #4a5158;
+    border-radius: 1px 1px 2px 2px;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.9);
+    /* Вырез под защёлку — узкий паз по центру верхней грани */
+    clip-path: polygon(
+        0% 0%, 36% 0%, 36% 26%, 64% 26%, 64% 0%, 100% 0%,
+        100% 100%, 0% 100%);
+}
+.rack-panel-face.copper .rack-port:hover .rack-port-body {
+    border-color: var(--accent);
+    box-shadow: inset 0 0 4px rgba(0,180,216,0.8);
+}
+
+/* --- Оптический адаптер: синий корпус со светлой шторкой --- */
+.rack-panel-face.optic .rack-port-body {
+    background: linear-gradient(180deg, #3d7fd0 0%, #2a5fa8 55%, #234f8c 100%);
+    border: 1px solid #1b3c6b;
+    border-radius: 2px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.35);
+    position: relative;
+}
+.rack-panel-face.optic .rack-port-body::after {
+    content: '';
+    position: absolute; left: 22%; right: 22%; top: 34%; bottom: 34%;
+    background: #cfd8e4;
+    border-radius: 1px;
+}
+.rack-panel-face.optic .rack-port:hover .rack-port-body { filter: brightness(1.25); }
+
+/* Занятый порт виден сразу, без наведения */
+.rack-panel-face.copper .rack-port.connected .rack-port-body,
+.rack-panel-face.sfp .rack-port.connected .rack-port-body {
+    background: #1d7a44;
+    border-color: #2ecc71;
+    box-shadow: inset 0 0 5px rgba(46,204,113,0.75);
+}
+.rack-panel-face.optic .rack-port.connected .rack-port-body {
+    background: linear-gradient(180deg, #ffd15c 0%, #f0a800 60%, #d18f00 100%);
+    border-color: #9a6b00;
+}
+.rack-panel-face.optic .rack-port.connected .rack-port-body::after { background: #fff6df; }
+
+
+/* ============================================================
+   Изменение занимаемых юнитов перетаскиванием
+   ============================================================ */
+.rack-resize-handle {
+    position: absolute;
+    left: 0; right: 0;
+    height: 6px;
+    cursor: ns-resize;
+    z-index: 4;
+    background: transparent;
+    transition: background 0.12s ease;
+}
+.rack-resize-handle.top    { top: -1px; }
+.rack-resize-handle.bottom { bottom: -1px; }
+.rack-resize-handle:hover  { background: var(--accent); opacity: 0.8; }
+
+/* Во время перетаскивания курсор держим на всей странице,
+   иначе он «слетает» при выходе за пределы полоски */
+body.rack-resizing,
+body.rack-resizing * { cursor: ns-resize !important; user-select: none; }
+
+/* Наложение на занятый юнит */
+.rack-device.resize-conflict {
+    outline: 2px solid var(--danger, #e74c3c);
+    outline-offset: 1px;
+    filter: sepia(0.6) saturate(3) hue-rotate(-20deg);
+}
+
+
+/* ============================================================
+   Оборудование без указанного юнита и легенда
+   ============================================================ */
+.rack-unplaced { margin-top: 0.9rem; }
 .rack-unplaced-title {
     font-size: 0.72rem;
     color: var(--text-secondary);
@@ -254,19 +594,20 @@
     transition: background 0.15s;
 }
 .rack-unplaced-item:hover { background: rgba(128,128,128,0.16); }
+.rack-unplaced-item .rack-device-name { color: var(--text-primary); }
+.rack-unplaced-item .rack-device-meta { color: var(--text-secondary); }
 
-/* ---------- Легенда ---------- */
 .rack-legend {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 0.8rem;
+    gap: 0.6rem;
+    margin-top: 0.9rem;
     padding-top: 0.6rem;
     border-top: 1px solid var(--border-color);
     font-size: 0.68rem;
     color: var(--text-secondary);
 }
-.rack-legend-item { display: flex; align-items: center; gap: 0.25rem; }
+.rack-legend-item { display: flex; align-items: center; gap: 0.3rem; }
 .rack-legend-item i {
     width: 12px; height: 12px;
     border-radius: 0.15rem;
@@ -275,156 +616,8 @@
 }
 
 /* ============================================================
-   Изменение занимаемых юнитов перетаскиванием
-   ============================================================ */
-.rack-device { position: relative; }
-
-.rack-resize-handle {
-    position: absolute;
-    left: 0;
-    right: 0;
-    height: 6px;
-    cursor: ns-resize;
-    z-index: 3;
-    /* Полоска проявляется только при наведении, чтобы не шуметь */
-    background: transparent;
-    transition: background 0.12s ease;
-}
-.rack-resize-handle.top    { top: -2px; }
-.rack-resize-handle.bottom { bottom: -2px; }
-.rack-resize-handle:hover  { background: var(--accent); opacity: 0.75; }
-
-/* Во время перетаскивания курсор держим на всей странице,
-   иначе он «слетает» при выходе за пределы полоски */
-body.rack-resizing,
-body.rack-resizing * { cursor: ns-resize !important; user-select: none; }
-
-/* Наложение на занятый юнит */
-.rack-device.resize-conflict {
-    outline: 2px solid var(--danger, #e74c3c);
-    outline-offset: 1px;
-    background: rgba(231, 76, 60, 0.22) !important;
-}
-
-/* ============================================================
-   Состав стека внутри блока (слоты участников)
-   ============================================================ */
-.rack-device-slots {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0 0.35rem;
-    font-size: 0.58rem;
-    line-height: 1.25;
-    color: var(--text-secondary);
-    overflow: hidden;
-}
-/* Устройство, в блоке которого мы находимся */
-.rack-device-slots .self {
-    color: var(--accent);
-    font-weight: 600;
-}
-
-/* ============================================================
-   Отметка «часть стека в другом шкафу»
-   ============================================================ */
-.rack-device-elsewhere {
-    font-size: 0.6rem;
-    color: var(--warning, #f39c12);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* ============================================================
-   Патч-панели и оптические кроссы
-   ============================================================ */
-.rack-device.is-panel {
-    /* Панели плотнее обычных блоков: место нужно портам */
-    padding: 0.15rem 0.35rem;
-    justify-content: flex-start;
-    gap: 0.05rem;
-}
-.rack-device.is-panel .rack-device-sub { display: none; }
-
-.rack-ports {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1px;
-    align-content: center;
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-    padding: 1px 0;
-}
-.rack-port {
-    flex: 1 1 auto;
-    min-width: 9px;
-    max-width: 18px;
-    aspect-ratio: 1 / 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.42rem;
-    line-height: 1;
-    color: var(--text-secondary);
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    transition: background 0.12s ease, border-color 0.12s ease;
-}
-.rack-port:hover {
-    border-color: var(--accent);
-    background: color-mix(in srgb, var(--accent) 25%, transparent);
-    color: var(--text-primary);
-}
-
-/* Медные порты (RJ45) — квадратные */
-.rack-ports.copper .rack-port { border-radius: 1px; }
-
-/* Оптика LC — круглые порты */
-.rack-ports.optic-round .rack-port {
-    border-radius: 50%;
-    border-color: #4a90d9;
-    background: rgba(74, 144, 217, 0.16);
-    color: transparent;   /* номер на круглом порту не читается — только подсказка */
-}
-/* Оптика SC/FC/ST — прямоугольные порты */
-.rack-ports.optic-square .rack-port {
-    border-radius: 1px;
-    border-color: #4a90d9;
-    background: rgba(74, 144, 217, 0.16);
-    aspect-ratio: 3 / 4;
-}
-.rack-ports.optic-round .rack-port:hover,
-.rack-ports.optic-square .rack-port:hover {
-    background: rgba(74, 144, 217, 0.45);
-    border-color: #2f6fb5;
-}
-
-/* Занятый порт — виден сразу, без наведения */
-.rack-port.connected {
-    background: var(--success, #27ae60) !important;
-    border-color: var(--success, #27ae60) !important;
-    color: #fff;
-}
-.rack-ports.optic-round .rack-port.connected,
-.rack-ports.optic-square .rack-port.connected { color: transparent; }
-.rack-port { cursor: pointer; }
-
-/* Пассивное устройство: чуть иная подача, чем у активного */
-.rack-device.is-passive { border-style: solid; }
-.rack-badge.ports {
-    color: var(--text-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 0.2rem;
-    padding: 0 0.2rem;
-    font-size: 0.58rem;
-}
-
-/* ============================================================
    Контекстное меню на свободном юните
    ============================================================ */
-.rack-slot.empty { cursor: context-menu; }
-
 #ctxMenu li.ctx-header {
     padding: 0.35rem 0.8rem;
     font-size: 0.72rem;
@@ -432,4 +625,11 @@ body.rack-resizing * { cursor: ns-resize !important; user-select: none; }
     border-bottom: 1px solid var(--border-color);
     cursor: default;
     pointer-events: none;
+}
+
+/* На узких экранах юнит ниже, иначе стойка не помещается */
+@media (max-width: 720px) {
+    .rack-frame { --rack-u: 26px; padding: 10px 6px 16px; }
+    .rack-inner { padding: 5px 12px; }
+    .rack-device-sub, .rack-device-slots { display: none; }
 }

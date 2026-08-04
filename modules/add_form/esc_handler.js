@@ -68,6 +68,9 @@
             case 'equipmentDetailsModal': if (typeof closeEquipmentDetails === 'function') closeEquipmentDetails(); break;
             case 'historyModal':          if (typeof closeEquipmentHistory === 'function') closeEquipmentHistory(); break;
             case 'snmpModal':             if (typeof closeSnmpModal === 'function') closeSnmpModal(); break;
+            case 'rightPanel':            if (typeof closeRackPanel === 'function') closeRackPanel(); break;
+            case 'passiveDeviceModal':    if (typeof closePassiveDeviceForm === 'function') closePassiveDeviceForm(); break;
+            case 'passivePortModal':      if (typeof closePassivePortForm === 'function') closePassivePortForm(); break;
         }
 
         // Гасим событие, чтобы Escape закрыл ровно одну (верхнюю) модалку

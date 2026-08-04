@@ -110,19 +110,56 @@ body.sidebar-expanded .main-area {
     overflow-y: auto;             /* появляется при наведении, только если контент превышает высоту */
 }
 
-/* Секции */
+/* Секции — сворачиваются кликом по заголовку */
 .nav-section { margin-bottom: 0.5rem; }
 .nav-section-title {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    width: 100%;
     padding: 0.5rem 0.8rem;
     font-size: 0.75rem;
+    font-family: inherit;
     font-weight: 600;
     text-transform: uppercase;
     color: var(--sidebar-section-text);
     letter-spacing: 0.05em;
     white-space: nowrap;
+    background: transparent;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.15s, color 0.15s;
+}
+.nav-section-title:hover {
+    background: var(--sidebar-hover);
+    color: var(--sidebar-text-hover);
+}
+
+/* Стрелка появляется вместе с подписями — в узком сайдбаре она не нужна */
+.section-chevron {
+    margin-left: auto;
+    font-size: 0.7rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s, transform 0.2s ease;
+}
+#sidebar:hover .section-chevron,
+body.sidebar-pinned .section-chevron { opacity: 0.75; visibility: visible; }
+.nav-section.collapsed .section-chevron { transform: rotate(-90deg); }
+
+/* Сворачивание действует только в развёрнутом сайдбаре: в узком
+   по иконкам ориентируются, и прятать их нельзя */
+.nav-section-body {
+    overflow: hidden;
+    transition: max-height 0.22s ease, opacity 0.18s ease;
+    max-height: 40rem;
+}
+#sidebar:hover .nav-section.collapsed .nav-section-body,
+body.sidebar-pinned .nav-section.collapsed .nav-section-body {
+    max-height: 0;
+    opacity: 0;
 }
 .section-icon {
     font-size: 0.9rem;

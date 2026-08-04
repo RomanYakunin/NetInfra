@@ -44,21 +44,31 @@
     }
 
     // ---------- Открытие / закрытие ----------
+    // Окно модальное, поэтому открытие не сдвигает содержимое страницы.
     function toggleRackPanel(open) {
         const panel = document.getElementById('rightPanel');
-        const tab = document.getElementById('panelTab');
         if (!panel) return;
 
         rackPanelOpen = open;
-        panel.classList.toggle('open', open);
-        if (tab) tab.classList.toggle('hidden', open);
+        if (open) {
+            if (typeof showModal === 'function') showModal(panel);
+            else panel.classList.add('visible');
+        } else {
+            panel.classList.remove('visible');
+        }
     }
 
-    // Открытие панели по конкретному оборудованию (openRackPanel) убрано:
-    // стойка теперь раскрывается компактным блоком под строкой узла —
-    // см. toggleNodeRacks в modules/nodes_page/nodes_page.js.
+    /**
+     * Открыть окно по конкретному оборудованию: показывается его шкаф,
+     * а сам блок подсвечивается и прокручивается в зону видимости.
+     */
+    async function openRackPanel(equipId) {
+        lastEquipId = equipId;
+        highlightEquipId = equipId ? parseInt(equipId, 10) : null;
+        await loadRackData({ equipment_id: equipId });
+    }
 
-    /** Открыть панель для узла целиком (без выделения конкретного устройства). */
+    /** Открыть окно для узла целиком (без выделения конкретного устройства). */
     async function openRackPanelForNode(nodeId) {
         lastEquipId = null;
         highlightEquipId = null;
@@ -193,7 +203,10 @@
             stackMembers[k].sort((a, b) => (parseInt(a.Slot, 10) || 0) - (parseInt(b.Slot, 10) || 0));
         });
 
+        // Корпус: верхняя крышка с общей высотой, нутро с направляющими, ножки
         let html = '<div class="rack-frame">';
+        html += `<div class="rack-frame-cap">${esc(rack.name || 'ШКАФ')} · ${height}U</div>`;
+        html += '<div class="rack-inner">';
         html += '<div class="rack-grid">';
 
         // Рисуем сверху вниз: юнит 1 наверху, юнит height внизу.
@@ -241,9 +254,11 @@
                     : '<span class="rack-badge off" title="Не активно">●</span>');
             }
             if (size > 1) badges.push(`<span class="rack-badge size">${size}U</span>`);
-            // Слот в стеке — важен для идентификации устройства внутри стека
-            if (isStack && eq.Slot !== null && eq.Slot !== undefined && eq.Slot !== '') {
-                badges.push(`<span class="rack-badge slot" title="Слот в стеке">S${eq.Slot}</span>`);
+            // Слот в стеке — без него не понять, какое из одинаковых
+            // устройств стека перед тобой. Ноль означает «не назначен»:
+            // слоты в стеке нумеруются с единицы.
+            if (isStack && parseInt(eq.Slot, 10) > 0) {
+                badges.push(`<span class="rack-badge slot" title="Слот в стеке">Слот ${esc(eq.Slot)}</span>`);
             }
 
             // Часть стека стоит в другом шкафу — подсказываем, где именно
@@ -259,7 +274,7 @@
 
             html += `
                 <div class="rack-device${isHighlight ? ' highlight' : ''}${isStack ? ' in-stack' : ''}${isPassive ? ' is-passive' : ''}${portsHtml ? ' is-panel' : ''}"
-                     style="grid-row: ${rowStart} / span ${size}; background:${c.bg}; border-color:${c.border};"
+                     style="grid-row: ${rowStart} / span ${size}; --dev-accent:${c.border};"
                      ${isPassive ? `data-passive-id="${eq.id}"` : `data-equip-id="${eq.id}"`}
                      data-unit-start="${eq.unit_start}"
                      data-unit-size="${size}"
@@ -281,7 +296,10 @@
                 </div>`;
         }
 
-        html += '</div></div>';
+        html += '</div>';   // .rack-grid
+        html += '</div>';   // .rack-inner
+        html += '<div class="rack-frame-feet"><span></span><span></span></div>';
+        html += '</div>';   // .rack-frame
 
         // Устройства этого шкафа без указанного юнита
         if (unplaced.length) {
@@ -326,8 +344,7 @@
         if (!Array.isArray(members) || members.length < 2) return '';
 
         const parts = members.map(m => {
-            const slot = (m.Slot !== null && m.Slot !== undefined && m.Slot !== '')
-                ? 'Слот ' + esc(m.Slot) : '—';
+            const slot = parseInt(m.Slot, 10) > 0 ? 'Слот ' + esc(m.Slot) : '—';
             const name = esc(m.hostname || 'без имени');
             const cls = m.id === selfId ? ' class="self"' : '';
             return '<span' + cls + '>' + slot + ': ' + name + '</span>';
@@ -347,17 +364,36 @@
         other:         'Прочее',
     };
 
-    /** Круглые порты у LC, прямоугольные у SC/FC/ST, квадратные у меди. */
+    /**
+     * Медь — розетки RJ-45, оптика — синие адаптеры LC/SC/FC/ST.
+     * Реальные панели различаются прежде всего этим, а не формой отверстия.
+     */
     function portShapeFor(portType) {
-        if (portType === 'LC') return 'optic-round';
-        if (portType === 'SC' || portType === 'FC' || portType === 'ST') return 'optic-square';
-        return 'copper';
+        if (portType === 'RJ45' || !portType) return 'copper';
+        if (portType === 'SFP') return 'sfp';
+        return 'optic';
     }
 
+    // Медные патч-панели: розетки идут блоками по 6 с промежутком —
+    // по нему монтажник и отсчитывает номера
+    const PORT_GROUP = 6;
+
+    // Оптический кросс устроен иначе: в корпусе фиксированное число
+    // посадочных секций, в каждую входит 8 адаптеров. Если в кроссе
+    // 12 портов, они занимают первую секцию и половину второй, а
+    // остальные позиции остаются пустыми заглушками — растягивать
+    // 12 адаптеров на всю ширину неправильно.
+    const OPTIC_SECTION = 8;
+    const OPTIC_SECTION_LABELS = ['A', 'B', 'C', 'D', 'E', 'F'];
+
     /**
-     * Порты пассивного устройства. Рисуются по реальным данным из
-     * passive_devices / passive_device_ports: количество, тип коннектора,
-     * занятость и направление каждого порта.
+     * Лицевая панель патч-панели или оптического кросса.
+     * Порты рисуются по данным passive_devices / passive_device_ports:
+     * количество, тип коннектора, занятость и направление каждого.
+     *
+     * Раскладка повторяет настоящую панель: ряды сверху вниз, внутри ряда
+     * блоки по 6 портов, над блоком — маркировочная полоса, под портом —
+     * его номер.
      *
      * @param {Object} eq устройство (is_passive === true)
      */
@@ -373,24 +409,117 @@
         const shape = portShapeFor(eq.port_type);
         const rows = Math.max(1, parseInt(eq.port_rows, 10) || 1);
 
-        let html = '<div class="rack-ports ' + shape + '" data-rows="' + rows + '">';
-        for (let i = 1; i <= total; i++) {
-            const p = byNumber[i];
-            const connected = p && p.is_connected;
-
-            // Подсказка: номер, тип коннектора и куда идёт линия
-            const tip = [];
-            tip.push(esc(eq.port_type || '') + ' порт ' + i);
-            if (p && p.label) tip.push(esc(p.label));
-            if (p && p.destination) tip.push('→ ' + esc(p.destination));
-            if (p && p.fiber_type) tip.push(esc(p.fiber_type));
-            if (!connected) tip.push('свободен');
-
-            html += '<span class="rack-port' + (connected ? ' connected' : '') + '"'
-                  + ' data-port="' + i + '" data-device-id="' + eq.id + '"'
-                  + ' title="' + tip.join(' · ') + '">' + i + '</span>';
-        }
+        let html = '<div class="rack-panel-face ' + shape + '">';
+        // Монтажное ухо с отверстиями — по нему панель узнаётся с первого взгляда
+        html += '<span class="rack-panel-ear left"></span>';
+        html += '<div class="rack-panel-rows">';
+        html += shape === 'optic'
+            ? renderOpticSections(eq, total, rows, byNumber)
+            : renderCopperRows(eq, total, rows, byNumber);
         html += '</div>';
+        html += '<span class="rack-panel-ear right"></span>';
+        html += '</div>';
+        return html;
+    }
+
+    /** Одна розетка/адаптер с подсказкой. */
+    function renderPort(eq, number, portData) {
+        const connected = portData && portData.is_connected;
+
+        // Подсказка: номер, тип коннектора и куда идёт линия
+        const tip = [];
+        tip.push((eq.port_type || 'Порт') + ' ' + number);
+        if (portData && portData.label)       tip.push(portData.label);
+        if (portData && portData.destination) tip.push('→ ' + portData.destination);
+        if (portData && portData.fiber_type)  tip.push(portData.fiber_type);
+        if (!connected) tip.push('свободен');
+
+        return '<span class="rack-port' + (connected ? ' connected' : '') + '"'
+             + ' data-port="' + number + '" data-device-id="' + eq.id + '"'
+             + ' title="' + esc(tip.join(' · ')) + '">'
+             + '<i class="rack-port-body"></i>'
+             + '<b class="rack-port-num">' + number + '</b>'
+             + '</span>';
+    }
+
+    /** Медная патч-панель: ряды розеток блоками по 6 с маркировочной полосой. */
+    function renderCopperRows(eq, total, rows, byNumber) {
+        const perRow = Math.ceil(total / rows);
+        let html = '';
+
+        for (let r = 0; r < rows; r++) {
+            const from = r * perRow + 1;
+            if (from > total) break;
+            const to = Math.min(total, from + perRow - 1);
+
+            html += '<div class="rack-panel-row">';
+            for (let start = from; start <= to; start += PORT_GROUP) {
+                const end = Math.min(to, start + PORT_GROUP - 1);
+                html += '<div class="rack-port-group">';
+                html += '<span class="rack-port-strip"></span>';
+                html += '<span class="rack-port-line">';
+                for (let i = start; i <= end; i++) html += renderPort(eq, i, byNumber[i]);
+                html += '</span></div>';
+            }
+            html += '</div>';
+        }
+        return html;
+    }
+
+    /**
+     * Оптический кросс: корпус разбит на посадочные секции по 8 адаптеров.
+     * Адаптеры ставятся по порядку с первой секции, незанятые позиции
+     * остаются пустыми заглушками — как в реальном кроссе, где 12 портов
+     * занимают полторы секции, а не растягиваются на всю ширину.
+     *
+     * 1U — три секции в ряд, 2U — по две секции в каждом из двух рядов
+     * (маркируются A/B/C/D, как на ШКОС).
+     */
+    function renderOpticSections(eq, total, rows, byNumber) {
+        const perRow = rows > 1 ? 2 : 3;
+        // Секций всегда хватает под все порты, но не меньше типовой раскладки
+        const needed = Math.ceil(total / OPTIC_SECTION);
+        const sections = Math.max(perRow * rows, needed);
+        const rowCount = Math.max(rows, Math.ceil(sections / perRow));
+        const showLabels = sections > 1;
+
+        let html = '';
+        let placed = 0;
+
+        for (let r = 0; r < rowCount; r++) {
+            html += '<div class="rack-panel-row">';
+            for (let c = 0; c < perRow; c++) {
+                const idx = r * perRow + c;
+                if (idx >= sections) {
+                    // Ряд короче остальных — держим ширину пустышкой
+                    html += '<div class="rack-port-group is-spacer"></div>';
+                    continue;
+                }
+
+                const filled = Math.max(0, Math.min(OPTIC_SECTION, total - placed));
+                html += '<div class="rack-port-group' + (filled ? '' : ' is-empty') + '">';
+                html += '<span class="rack-port-line">';
+                for (let k = 0; k < OPTIC_SECTION; k++) {
+                    if (k < filled) {
+                        const number = placed + k + 1;
+                        html += renderPort(eq, number, byNumber[number]);
+                    } else {
+                        // Пустое посадочное место: тёмный проём без адаптера
+                        html += '<span class="rack-port-blank" title="Свободное место под адаптер"></span>';
+                    }
+                }
+                html += '</span>';
+                if (showLabels) {
+                    html += '<span class="rack-section-label">'
+                          + (OPTIC_SECTION_LABELS[idx] || (idx + 1)) + '</span>';
+                }
+                html += '</div>';
+                // Прижимной винт между секциями — характерная деталь кросса
+                if (c < perRow - 1) html += '<span class="rack-panel-screw"></span>';
+                placed += filled;
+            }
+            html += '</div>';
+        }
         return html;
     }
 
@@ -805,27 +934,21 @@
         }
     }
 
-    // ---------- Кнопки панели ----------
+    // ---------- Кнопки окна ----------
+    // Escape обрабатывается централизованно в modules/add_form/esc_handler.js:
+    // окно стойки — обычная модалка, свой обработчик спорил бы с ним.
     document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('panelClose')?.addEventListener('click', () => toggleRackPanel(false));
 
-        document.getElementById('panelTab')?.addEventListener('click', () => {
-            if (rackData) toggleRackPanel(true);
-            else toast('Выберите оборудование и откройте «Отобразить стойку»', 'info');
+        // Клик по затемнению закрывает окно, клик внутри — нет
+        document.getElementById('rightPanel')?.addEventListener('click', function (e) {
+            if (e.target === this) toggleRackPanel(false);
         });
     });
 
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && rackPanelOpen) {
-            // Не закрываем панель, если поверх открыта модалка
-            if (document.querySelector('.add-form-modal.visible')) return;
-            toggleRackPanel(false);
-        }
-    });
-
     // ---------- Экспорт ----------
-    // window.openRackPanel больше не экспортируется: шкафы показываются
-    // компактной стойкой под строкой узла (toggleNodeRacks в nodes_page.js).
+    window.openRackPanel = openRackPanel;
     window.openRackPanelForNode = openRackPanelForNode;
     window.toggleRackPanel = toggleRackPanel;
+    window.closeRackPanel = () => toggleRackPanel(false);
 })();

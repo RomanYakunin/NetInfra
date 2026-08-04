@@ -55,8 +55,59 @@ function initPinButton() {
     });
 }
 
+/**
+ * Секции меню сворачиваются кликом по заголовку. Состояние хранится
+ * в localStorage: разделов планируется много, и каждый раз проматывать
+ * ненужные — лишняя работа.
+ *
+ * Секцию с текущей страницей не сворачиваем: иначе после перехода
+ * активный пункт оказался бы спрятан.
+ */
+function initSidebarSections() {
+    const STORAGE_KEY = 'netinfra-sidebar-sections';
+
+    let collapsed;
+    try {
+        collapsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        if (!Array.isArray(collapsed)) collapsed = [];
+    } catch (e) {
+        collapsed = [];
+    }
+
+    const save = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(collapsed));
+
+    document.querySelectorAll('.nav-section[data-section]').forEach(section => {
+        const key = section.dataset.section;
+        const title = section.querySelector('.nav-section-title');
+        if (!title) return;
+
+        const hasActive = !!section.querySelector('.nav-item.active');
+        const isCollapsed = collapsed.indexOf(key) !== -1 && !hasActive;
+
+        section.classList.toggle('collapsed', isCollapsed);
+        title.setAttribute('aria-expanded', String(!isCollapsed));
+
+        // Активную секцию раскрыли принудительно — снимем её из сохранённых
+        if (hasActive && collapsed.indexOf(key) !== -1) {
+            collapsed = collapsed.filter(k => k !== key);
+            save();
+        }
+
+        title.addEventListener('click', () => {
+            const nowCollapsed = !section.classList.contains('collapsed');
+            section.classList.toggle('collapsed', nowCollapsed);
+            title.setAttribute('aria-expanded', String(!nowCollapsed));
+
+            collapsed = collapsed.filter(k => k !== key);
+            if (nowCollapsed) collapsed.push(key);
+            save();
+        });
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initPinButton();
+    initSidebarSections();
 
     const savedTheme = localStorage.getItem('netinfra-theme') || 'dark';
     setTheme(savedTheme);
@@ -73,6 +124,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 const text = item.textContent.toLowerCase();
                 item.style.display = (!query || text.includes(query)) ? '' : 'none';
             });
+
+            // Найденное в свёрнутой секции иначе осталось бы невидимым
+            document.querySelectorAll('.nav-section[data-section]').forEach(section => {
+                if (!query) {
+                    section.classList.toggle('collapsed', section.dataset.wasCollapsed === '1');
+                    return;
+                }
+                if (section.dataset.wasCollapsed === undefined) {
+                    section.dataset.wasCollapsed = section.classList.contains('collapsed') ? '1' : '0';
+                }
+                const hasMatch = Array.from(section.querySelectorAll('.nav-item'))
+                    .some(i => i.style.display !== 'none');
+                section.classList.toggle('collapsed', !hasMatch);
+            });
+            if (!query) {
+                document.querySelectorAll('.nav-section[data-section]')
+                    .forEach(s => delete s.dataset.wasCollapsed);
+            }
         });
     }
 });

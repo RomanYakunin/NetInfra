@@ -61,33 +61,35 @@ tr.equipment-detail-row td {
 }
 
 /* ============================================================
-   КОМПАКТНЫЕ ШКАФЫ ПОД СТРОКОЙ УЗЛА
+   КОМПАКТНЫЕ СТОЙКИ УЗЛА (модальное окно)
    Юниты идут снизу вверх: 1U внизу, максимальный — вверху.
+   Окно поверх страницы, поэтому таблицу узлов ничего не сдвигает.
    ============================================================ */
-tr.rack-detail-row { display: none; }
-tr.rack-detail-row.visible { display: table-row; }
-tr.rack-detail-row td {
-    padding: 0; border-bottom: 2px solid var(--accent); background: var(--bg-card);
+.add-form-modal.node-racks-modal .modal-content {
+    width: auto; min-width: 420px; max-width: 94vw;
+    padding: 1.2rem 1.4rem;
+    display: flex; flex-direction: column; gap: 0.9rem;
 }
-
-.node-racks { padding: 0.8rem 1rem; }
 .node-racks-head {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 0.6rem;
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 1rem;
 }
-.node-racks-head .nested-title { margin-bottom: 0; }
+.node-racks-head h3 { margin: 0; }
+.node-racks-subtitle {
+    font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.15rem;
+}
 .node-racks-tools { display: flex; gap: 0.2rem; }
 .node-racks-btn {
     background: transparent; border: none; cursor: pointer;
-    color: var(--text-secondary); font-size: 0.9rem; line-height: 1;
-    padding: 0.2rem 0.4rem; border-radius: 4px;
+    color: var(--text-secondary); font-size: 1rem; line-height: 1;
+    padding: 0.25rem 0.45rem; border-radius: 4px;
 }
 .node-racks-btn:hover { background: var(--table-hover); color: var(--accent); }
 
-/* Шкафы стоят друг за другом; при нехватке места — горизонтальная прокрутка */
+/* Шкафы стоят друг за другом; при нехватке места — прокрутка */
 .node-racks-strip {
     display: flex; align-items: flex-start; gap: 1rem;
-    max-height: 560px; overflow: auto; padding-bottom: 0.4rem;
+    max-height: 72vh; overflow: auto; padding: 0 0.2rem 0.4rem;
 }
 
 /* Без overflow: иначе заголовок не прилипнет при прокрутке высокого шкафа */
