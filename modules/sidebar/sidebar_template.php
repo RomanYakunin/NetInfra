@@ -57,12 +57,11 @@
                 </a>
             </div>
         </div>
-    </nav>
 
-    <!-- Нижний блок -->
-    <div class="sidebar-footer">
+        <!-- Секция 3: Администрирование (только для админа).
+             Стоит вместе с остальными разделами, а не в нижнем блоке:
+             так все аккордеоны сворачиваются единообразно. -->
         <?php if (($_SESSION['role'] ?? '') === 'admin'): ?>
-        <!-- Администрирование (только для админа) -->
         <div class="nav-section" data-section="admin">
             <button type="button" class="nav-section-title" aria-expanded="true">
                 <span class="section-icon">⚙️</span>
@@ -82,7 +81,10 @@
             </div>
         </div>
         <?php endif; ?>
+    </nav>
 
+    <!-- Нижний блок: только карточка пользователя и переключатели темы -->
+    <div class="sidebar-footer">
         <?php
             $sidebarLogin = $_SESSION['login'] ?? '';
             $sidebarRole  = $_SESSION['role'] ?? '';

@@ -90,10 +90,12 @@ if (!$isLoggedIn) {
         </style>
     </head>
     <body>
-            <!-- Форма входа -->
+            <!-- Форма входа. Второй шаг появляется, если у учётной записи
+                 стоит признак «сменить пароль при первом входе». -->
             <div class="login-box">
-                <h2>Вход в систему</h2>
+                <h2 id="login-title">Вход в систему</h2>
                 <div class="error" id="login-error"></div>
+
                 <form id="login-form">
                     <div class="form-group">
                         <label>Логин</label>
@@ -105,33 +107,109 @@ if (!$isLoggedIn) {
                     </div>
                     <button type="submit">Войти</button>
                 </form>
+
+                <form id="change-form" style="display:none;">
+                    <p class="login-hint">
+                        Для этой учётной записи требуется сменить пароль при первом входе.
+                    </p>
+                    <div class="form-group">
+                        <label>Новый пароль</label>
+                        <input type="password" id="new-password" required
+                               autocomplete="new-password" minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label>Подтвердите пароль</label>
+                        <input type="password" id="confirm-password" required
+                               autocomplete="new-password" minlength="6">
+                    </div>
+                    <button type="submit">Сменить пароль и войти</button>
+                </form>
             </div>
             <script>
+                var loginError = document.getElementById('login-error');
+                // Текущий пароль нужен обработчику смены — запоминаем на время шага
+                var enteredLogin = '', enteredPassword = '';
+
                 document.getElementById('login-form').addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    const errorDiv = document.getElementById('login-error');
-                    errorDiv.textContent = '';
+                    loginError.textContent = '';
                     const formData = new FormData(e.target);
                     try {
                         const res = await fetch('?ajax=auth', { method: 'POST', body: formData });
                         const data = await res.json();
+                        if (!data.success) {
+                            loginError.textContent = data.error || 'Ошибка входа';
+                            return;
+                        }
+
+                        if (data.must_change_password) {
+                            enteredLogin = formData.get('login');
+                            enteredPassword = formData.get('password');
+                            document.getElementById('login-form').style.display = 'none';
+                            document.getElementById('change-form').style.display = '';
+                            document.getElementById('login-title').textContent = 'Смена пароля';
+                            document.getElementById('new-password').focus();
+                            return;
+                        }
+
+                        // В приложение пускаем и админа, и пользователя (только просмотр)
+                        location.reload();
+                    } catch {
+                        loginError.textContent = 'Ошибка сети';
+                    }
+                });
+
+                document.getElementById('change-form').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    loginError.textContent = '';
+
+                    const pass = document.getElementById('new-password').value;
+                    const confirm = document.getElementById('confirm-password').value;
+
+                    if (pass !== confirm) {
+                        loginError.textContent = 'Пароли не совпадают';
+                        return;
+                    }
+                    if (pass.length < 6) {
+                        loginError.textContent = 'Пароль должен быть не короче 6 символов';
+                        return;
+                    }
+                    if (pass === enteredPassword) {
+                        loginError.textContent = 'Новый пароль совпадает с текущим';
+                        return;
+                    }
+
+                    const fd = new FormData();
+                    fd.append('current_password', enteredPassword);
+                    fd.append('new_password', pass);
+                    fd.append('confirm_password', confirm);
+
+                    try {
+                        const res = await fetch('?ajax=change_password', { method: 'POST', body: fd });
+                        const data = await res.json();
                         if (data.success) {
-                            // В приложение пускаем и админа, и пользователя (только просмотр)
+                            enteredPassword = '';
                             location.reload();
                         } else {
-                            errorDiv.textContent = data.error || 'Ошибка входа';
+                            loginError.textContent = data.error || 'Не удалось сменить пароль';
                         }
                     } catch {
-                        errorDiv.textContent = 'Ошибка сети';
+                        loginError.textContent = 'Ошибка сети';
                     }
                 });
             </script>
     </body>
     </html>
-    
+
     <?php
     exit; // Останавливаем вывод основного интерфейса
 }
+
+// Пароль не сменён — доступ к приложению закрыт.
+// Проверка на сервере обязательна: без неё шаг смены пароля обходился бы
+// обычным обновлением страницы. Сам запрос смены при этом пропускаем,
+// иначе сменить пароль было бы нечем.
+$mustChangePassword = !empty($_SESSION['must_change_password']);
 // ============================================================
 // index.php – NetInfra Manager (единый файл)
 // ============================================================
@@ -144,6 +222,14 @@ if (isset($_GET['ajax'])) {
     header('Content-Type: application/json; charset=utf-8');
     
     $action = $_GET['ajax'];
+
+// Пока пароль не сменён, из всего API доступна только сама смена
+if ($mustChangePassword && $action !== 'change_password') {
+    http_response_code(403);
+    echo json_encode(['error' => 'Сначала смените пароль']);
+    exit;
+}
+
 if (isset($routes[$action])) {
     require_once __DIR__ . '/' . $routes[$action];
     exit;
@@ -513,6 +599,12 @@ $adminOnlyPages = ['users', 'database_manager', 'journal'];
 if (in_array($page, $adminOnlyPages, true) && ($_SESSION['role'] ?? '') !== 'admin') {
     $error = 'Доступ запрещён: страница доступна только администратору';
     $page = 'forbidden';
+}
+
+// Вместо интерфейса показываем экран смены пароля, пока он не сменён
+if ($mustChangePassword) {
+    include __DIR__ . '/modules/users/force_password_change.php';
+    exit;
 }
 
 // Подготовка данных для вкладок
