@@ -1,0 +1,90 @@
+/* ============================================================
+   modules/checklist_table/checklist_table.css
+   Автоматическая задача «Подключить Zabbix» над таблицей чек-листа.
+   ============================================================ */
+.auto-task {
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-color);
+    border-left: 5px solid var(--danger, #e74c3c);
+    border-radius: 10px;
+    background: var(--bg-card);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+/* Задача закрыта — подсветка меняется на спокойную */
+.auto-task.done { border-left-color: var(--success, #27ae60); }
+
+.auto-task-head {
+    display: flex; align-items: center; gap: 0.6rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: transparent; border: none;
+    font-family: inherit; font-size: 0.95rem; text-align: left;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.auto-task-head:hover { background: var(--table-hover); }
+
+.auto-task-arrow { font-size: 0.75rem; color: var(--text-secondary); width: 12px; }
+.auto-task-icon  { font-size: 1rem; }
+.auto-task-title { font-weight: 600; }
+
+.auto-task-badge {
+    min-width: 1.6rem; text-align: center;
+    padding: 0.1rem 0.45rem; border-radius: 10px;
+    font-size: 0.78rem; font-weight: 700;
+    background: var(--danger, #e74c3c); color: #fff;
+}
+.auto-task.done .auto-task-badge { background: var(--success, #27ae60); }
+
+.auto-task-note {
+    font-size: 0.78rem; color: var(--text-secondary);
+    margin-left: auto; text-align: right;
+}
+
+.auto-task-body {
+    padding: 0.2rem 1rem 1rem;
+    border-top: 1px solid var(--border-color);
+}
+.auto-task-loading,
+.auto-task-error,
+.auto-task-ok {
+    padding: 0.9rem 0.2rem; font-size: 0.88rem;
+}
+.auto-task-error { color: var(--danger, #e74c3c); }
+.auto-task-ok    { color: var(--success, #27ae60); }
+
+.auto-task-table {
+    width: 100%; border-collapse: collapse;
+    font-size: 0.85rem; margin-top: 0.6rem;
+}
+.auto-task-table thead th {
+    text-align: left; font-weight: 600; font-size: 0.75rem;
+    color: var(--text-secondary);
+    padding: 0.4rem 0.6rem;
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
+}
+.auto-task-table tbody td {
+    padding: 0.45rem 0.6rem;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+.auto-task-table tbody tr { cursor: pointer; }
+.auto-task-table tbody tr:hover { background: var(--table-hover); }
+.at-host { font-weight: 600; }
+.at-ip   { font-variant-numeric: tabular-nums; }
+.at-warn { color: var(--warning, #f39c12); font-style: italic; }
+.at-dim  { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+
+.auto-task-sub {
+    margin-top: 1rem; font-size: 0.82rem;
+    color: var(--text-secondary); font-weight: 600;
+}
+.auto-task-list {
+    margin: 0.4rem 0 0; padding-left: 1.2rem;
+    font-size: 0.82rem; color: var(--text-primary);
+    columns: 2; column-gap: 2rem;
+}
+@media (max-width: 700px) { .auto-task-list { columns: 1; } }

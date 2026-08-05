@@ -91,6 +91,57 @@ return [
     'kb_update_row'           => 'modules/knowledge_base/api/kb_update_row.php',
     'kb_delete_row'           => 'modules/knowledge_base/api/kb_delete_row.php',
 
+    // ----------------------------- ИМПОРТ УЗЛОВ -----------------------------
+    // Один лист xlsx либо csv. Столбцы определяются по названиям, а те,
+    // что не узнались, пользователь сопоставляет вручную в окне проверки.
+    'import_nodes'            => 'modules/import_nodes/api/import_nodes.php',
+
+    // ----------------------------- ТЕЛЕФОНЫ -----------------------------
+    // Аппараты, коробки/поставки и доп. панели быстрого набора.
+    // Телефоны приходят коробками по 9-10 шт, панели — своими коробками,
+    // поэтому склад ведётся на уровне коробок, а не отдельных штук.
+    'get_phones'              => 'modules/phones_page/api/GetData/get_phones.php',
+    'get_phone_detail'        => 'modules/phones_page/api/GetData/get_phone_detail.php',
+    'get_phone_refs'          => 'modules/phones_page/api/GetData/get_phone_refs.php',
+    'get_deliveries'          => 'modules/phones_page/api/GetData/get_deliveries.php',
+    'get_box_detail'          => 'modules/phones_page/api/GetData/get_box_detail.php',
+    'get_expansions'          => 'modules/phones_page/api/GetData/get_expansions.php',
+
+    'add_phone'               => 'modules/phones_page/api/AddData/add_phone.php',
+    'add_delivery'            => 'modules/phones_page/api/AddData/add_delivery.php',
+    'add_box'                 => 'modules/phones_page/api/AddData/add_box.php',
+    'add_expansion'           => 'modules/phones_page/api/AddData/add_expansion.php',
+    'add_phone_meta'          => 'modules/phones_page/api/AddData/add_phone_meta.php',
+
+    'update_phone'            => 'modules/phones_page/api/UpdateData/update_phone.php',
+    'update_delivery'         => 'modules/phones_page/api/UpdateData/update_delivery.php',
+    'update_box'              => 'modules/phones_page/api/UpdateData/update_box.php',
+    'open_box'                => 'modules/phones_page/api/UpdateData/open_box.php',
+    'update_expansion'        => 'modules/phones_page/api/UpdateData/update_expansion.php',
+
+    'delete_phone'            => 'modules/phones_page/api/DeleteData/delete_phone.php',
+    'delete_delivery'         => 'modules/phones_page/api/DeleteData/delete_delivery.php',
+    'delete_box'              => 'modules/phones_page/api/DeleteData/delete_box.php',
+    'delete_expansion'        => 'modules/phones_page/api/DeleteData/delete_expansion.php',
+
+    'import_phones'           => 'modules/phones_page/api/import_phones.php',
+
+    // Накладные, расписки и акты, прикреплённые к телефону.
+    // Сами файлы лежат в uploads/phone_docs (каталог закрыт .htaccess),
+    // get_phone_document отдаёт их только авторизованному пользователю.
+    'get_phone_documents'     => 'modules/phones_page/api/GetData/get_phone_documents.php',
+    'get_phone_document'      => 'modules/phones_page/api/GetData/get_phone_document.php',
+    'upload_phone_document'   => 'modules/phones_page/api/AddData/upload_phone_document.php',
+    'delete_phone_document'   => 'modules/phones_page/api/DeleteData/delete_phone_document.php',
+
+    // ----------------------------- ZABBIX -----------------------------
+    // Данные берём из мониторинга: ACL на коммутаторах пускает SNMP
+    // только с сервера Zabbix, а он эти же OID уже опрашивает.
+    'zabbix_ping'             => 'modules/zabbix/api/zabbix_ping.php',
+    'zabbix_problems'         => 'modules/zabbix/api/zabbix_problems.php',
+    'zabbix_settings'         => 'modules/zabbix/api/zabbix_settings.php',
+    'zabbix_missing'          => 'modules/zabbix/api/zabbix_missing.php',
+
     // ----------------------------- ЖУРНАЛ ДЕЙСТВИЙ -----------------------------
     'get_logs'                => 'modules/journal/api/get_logs.php',
     'get_log_detail'          => 'modules/journal/api/get_log_detail.php',

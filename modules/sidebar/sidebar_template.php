@@ -29,6 +29,9 @@
                 <a href="?page=dashboard" class="nav-item <?= $page=='dashboard' ? 'active' : '' ?>">
                     <span class="nav-icon">📈</span> <span class="nav-label">Дашборд</span>
                 </a>
+                <a href="?page=monitoring" class="nav-item <?= $page=='monitoring' ? 'active' : '' ?>">
+                    <span class="nav-icon">🚨</span> <span class="nav-label">Панель</span>
+                </a>
                 <a href="?page=nodes" class="nav-item <?= $page=='nodes' ? 'active' : '' ?>">
                     <span class="nav-icon">🖧</span> <span class="nav-label">Узлы</span>
                 </a>
@@ -45,6 +48,9 @@
             <div class="nav-section-body">
                 <a href="?page=warehouse" class="nav-item <?= $page=='warehouse' ? 'active' : '' ?>">
                     <span class="nav-icon">🏬</span> <span class="nav-label">Склад</span>
+                </a>
+                <a href="?page=phones" class="nav-item <?= $page=='phones' ? 'active' : '' ?>">
+                    <span class="nav-icon">📞</span> <span class="nav-label">Телефоны</span>
                 </a>
                 <a href="?page=checklist" class="nav-item <?= $page=='checklist' ? 'active' : '' ?>">
                     <span class="nav-icon">✅</span> <span class="nav-label">Чек-лист</span>

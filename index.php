@@ -2,7 +2,7 @@
 // ============================================================
 // index.php – NetInfra Manager (единый файл)
 // ============================================================
-require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/includes/helpers.php';
 session_start();
 
 // Выход
@@ -526,8 +526,14 @@ switch ($page) {
     case 'dashboard':
         require_once 'modules/dashboard/dashboard.php';
         break;
+    case 'monitoring':
+        // Данные страница берёт из Zabbix через AJAX — готовить нечего
+        break;
     case 'warehouse':
         require_once 'modules/warehouse_page/warehouse_page.php';
+        break;
+    case 'phones':
+        require_once 'modules/phones_page/phones_page.php';
         break;
     case 'database_manager':
         require_once 'modules/knowledge_base/knowledge_base.php';
@@ -762,6 +768,9 @@ switch ($page) {
                     case 'dashboard':
                         include 'modules/dashboard/dashboard_template.php';
                         break;
+                    case 'monitoring':
+                        include 'modules/monitoring/monitoring_template.php';
+                        break;
                     case 'warehouse':
                         include 'modules/warehouse_page/warehouse_page_template.php';
                         break;
@@ -773,6 +782,9 @@ switch ($page) {
                         break;
                     case 'journal':
                         include 'modules/journal/journal_template.php';
+                        break;
+                    case 'phones':
+                        include 'modules/phones_page/phones_page_template.php';
                         break;
                 }
     ?>

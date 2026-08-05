@@ -1,8 +1,16 @@
+// modules/add_form/esc_handler.js
+//
+// Единое закрытие модальных окон. Форма закрывается тремя способами:
+// кнопкой «Отмена», клавишей Escape и щелчком по подложке вне формы.
+// Все три пути ведут в одну и ту же close-функцию модалки, поэтому
+// сброс полей и уничтожение поисковых селектов происходят одинаково.
 (function() {
     'use strict';
 
+    const MODAL_SELECTOR = '.add-form-modal, .modal';
+
     function getMaxZIndex() {
-        const modals = document.querySelectorAll('.add-form-modal, .modal');
+        const modals = document.querySelectorAll(MODAL_SELECTOR);
         let max = 3000;
         modals.forEach(m => {
             const z = parseInt(window.getComputedStyle(m).zIndex) || 3000;
@@ -22,58 +30,136 @@
         modal.classList.add('visible');
     };
 
+    /**
+     * Имя модалки → её функция закрытия.
+     *
+     * Собственная close-функция нужна каждой форме: она сбрасывает поля,
+     * убирает поисковые селекты и чистит ошибки. Просто снять класс
+     * visible недостаточно — при следующем открытии форма будет грязной.
+     */
+    const CLOSERS = {
+        universalAddModal:      'closeAddForm',
+        moveModal:              'closeMoveModal',
+        warehouseModal:         'closeWarehouseModal',
+        warehouseEquipmentModal:'closeWarehouseEquipmentForm',
+        addStackDeviceModal:    'closeStackDeviceForm',
+        deleteConfirmModal:     'closeDeleteModal',
+        alertSettingsModal:     'closeAlertSettings',
+        checklistModal:         'closeChecklistModal',
+        addModelModal:          'closeAddModelModal',
+        metaAddModal:           'closeMetaForm',
+        metaAddModel:           'closeModelMetaForm',
+        addBuildingModal:       'closeBuildingForm',
+        addLocationModal:       'closeLocationForm',
+        addNodeTypeModal:       'closeNodeTypeForm',
+        moduleAddModal:         'closeModuleDialog',
+        serviceInstructionModal:'closeServiceInstruction',
+        addRackModal:           'closeAddRackForm',
+        addRackModelModal:      'closeAddRackModelForm',
+        lldpImportModal:        'closeLLDPImport',
+        userFormModal:          'closeUserForm',
+        kbRowModal:             'kbCloseRowModal',
+        kbColumnModal:          'kbCloseColumnModal',
+        equipmentDetailsModal:  'closeEquipmentDetails',
+        historyModal:           'closeEquipmentHistory',
+        snmpModal:              'closeSnmpModal',
+        rightPanel:             'closeRackPanel',
+        passiveDeviceModal:     'closePassiveDeviceForm',
+        passivePortModal:       'closePassivePortForm',
+        phoneFormModal:         'closePhoneForm',
+        phoneDetailModal:       'closePhoneDetail',
+        deliveryFormModal:      'closeDeliveryForm',
+        boxFormModal:           'closeBoxForm',
+        openBoxModal:           'closeOpenBox',
+        expansionFormModal:     'closeExpansionForm',
+        phoneImportModal:       'closePhoneImport',
+        nodeImportModal:        'closeNodeImport',
+        zabbixSettingsModal:    'closeZabbixSettings'
+    };
+
+    /**
+     * Закрывает модалку её собственной функцией.
+     * Если функции нет, просто убираем visible — окно всё равно закроется.
+     */
+    function closeModal(modal) {
+        if (!modal) return;
+        modal.classList.remove('visible');
+
+        const fnName = CLOSERS[modal.id];
+        if (fnName && typeof window[fnName] === 'function') {
+            window[fnName]();
+        }
+    }
+    window.closeTopModalByElement = closeModal;
+
+    /** Самая верхняя видимая модалка. */
+    function topVisibleModal() {
+        const visible = document.querySelectorAll('.add-form-modal.visible, .modal.visible');
+        let top = null, maxZ = -1;
+        visible.forEach(modal => {
+            const z = parseInt(window.getComputedStyle(modal).zIndex) || 3000;
+            if (z > maxZ) { maxZ = z; top = modal; }
+        });
+        return top;
+    }
+
+    // ---------------------------------------------------------------
+    //  Escape — закрывает ровно одну, самую верхнюю модалку
+    // ---------------------------------------------------------------
     document.addEventListener('keydown', function(e) {
         if (e.key !== 'Escape') return;
 
-        const visibleModals = document.querySelectorAll('.add-form-modal.visible, .modal.visible');
-        if (visibleModals.length === 0) return;
+        const top = topVisibleModal();
+        if (!top) return;
 
-        let topModal = null;
-        let maxZ = -1;
-        visibleModals.forEach(modal => {
-            const z = parseInt(window.getComputedStyle(modal).zIndex) || 3000;
-            if (z > maxZ) {
-                maxZ = z;
-                topModal = modal;
-            }
-        });
-
-        if (!topModal) return;
-
-        topModal.classList.remove('visible');
-
-        switch (topModal.id) {
-            case 'universalAddModal':     if (typeof closeAddForm === 'function') closeAddForm(); break;
-            case 'moveModal':             if (typeof closeMoveModal === 'function') closeMoveModal(); break;
-            case 'warehouseModal':        if (typeof closeWarehouseModal === 'function') closeWarehouseModal(); break;
-            case 'warehouseEquipmentModal': if (typeof closeWarehouseEquipmentForm === 'function') closeWarehouseEquipmentForm(); break;
-            case 'addStackDeviceModal':   if (typeof closeStackDeviceForm === 'function') closeStackDeviceForm(); break;
-            case 'deleteConfirmModal':    if (typeof closeDeleteModal === 'function') closeDeleteModal(); break;
-            case 'alertSettingsModal':    if (typeof closeAlertSettings === 'function') closeAlertSettings(); break;
-            case 'checklistModal':        if (typeof closeChecklistModal === 'function') closeChecklistModal(); break;
-            case 'addModelModal':         if (typeof closeAddModelModal === 'function') closeAddModelModal(); break;
-            case 'metaAddModal':          if (typeof closeMetaForm === 'function') closeMetaForm(); break;
-            case 'metaAddModel':          if (typeof closeModelMetaForm === 'function') closeModelMetaForm(); break;
-            case 'addBuildingModal':      if (typeof closeBuildingForm === 'function') closeBuildingForm(); break;
-            case 'addLocationModal':      if (typeof closeLocationForm === 'function') closeLocationForm(); break;
-            case 'addNodeTypeModal':      if (typeof closeNodeTypeForm === 'function') closeNodeTypeForm(); break;
-            case 'moduleAddModal':        if (typeof closeModuleDialog === 'function') closeModuleDialog(); break;
-            case 'serviceInstructionModal': if (typeof closeServiceInstruction === 'function') closeServiceInstruction(); break;
-            case 'addRackModal':          if (typeof closeAddRackForm === 'function') closeAddRackForm(); break;
-            case 'addRackModelModal':     if (typeof closeAddRackModelForm === 'function') closeAddRackModelForm(); break;
-            case 'lldpImportModal':       if (typeof closeLLDPImport === 'function') closeLLDPImport(); break;
-            case 'userFormModal':         if (typeof closeUserForm === 'function') closeUserForm(); break;
-            case 'kbRowModal':            if (typeof kbCloseRowModal === 'function') kbCloseRowModal(); break;
-            case 'kbColumnModal':         if (typeof kbCloseColumnModal === 'function') kbCloseColumnModal(); break;
-            case 'equipmentDetailsModal': if (typeof closeEquipmentDetails === 'function') closeEquipmentDetails(); break;
-            case 'historyModal':          if (typeof closeEquipmentHistory === 'function') closeEquipmentHistory(); break;
-            case 'snmpModal':             if (typeof closeSnmpModal === 'function') closeSnmpModal(); break;
-            case 'rightPanel':            if (typeof closeRackPanel === 'function') closeRackPanel(); break;
-            case 'passiveDeviceModal':    if (typeof closePassiveDeviceForm === 'function') closePassiveDeviceForm(); break;
-            case 'passivePortModal':      if (typeof closePassivePortForm === 'function') closePassivePortForm(); break;
-        }
-
-        // Гасим событие, чтобы Escape закрыл ровно одну (верхнюю) модалку
+        closeModal(top);
         e.stopPropagation();
     });
+
+    // ---------------------------------------------------------------
+    //  Щелчок вне формы
+    //
+    //  Закрываем, только если И нажатие, И отпускание кнопки пришлись
+    //  на подложку. Иначе выделение текста внутри формы, законченное
+    //  движением мыши за её край, закрывало бы форму вместе с введёнными
+    //  данными — так и происходило раньше.
+    // ---------------------------------------------------------------
+    let pressStartedOn = null;
+
+    /** Нажатие пришлось на подложку модалки, а не на её содержимое. */
+    function backdropOf(target) {
+        if (!target || !target.closest) return null;
+        const modal = target.closest(MODAL_SELECTOR);
+        if (!modal || !modal.classList.contains('visible')) return null;
+        // Внутри окна — не подложка
+        if (target.closest('.modal-content')) return null;
+        return modal;
+    }
+
+    document.addEventListener('mousedown', function(e) {
+        // Только основная кнопка мыши: правый клик открывает контекстное меню
+        pressStartedOn = e.button === 0 ? backdropOf(e.target) : null;
+    }, true);
+
+    document.addEventListener('mouseup', function(e) {
+        const started = pressStartedOn;
+        pressStartedOn = null;
+        if (!started || e.button !== 0) return;
+
+        // Отпустили там же, где нажали, и это по-прежнему подложка
+        if (backdropOf(e.target) !== started) return;
+
+        // Пользователь мог выделять текст, начав с подложки, — не мешаем ему
+        const selection = window.getSelection();
+        if (selection && !selection.isCollapsed) return;
+
+        // Закрываем только верхнюю модалку: подложка нижней перекрыта
+        if (started !== topVisibleModal()) return;
+
+        closeModal(started);
+    }, true);
+
+    // Перетаскивание за пределы окна браузера не должно оставлять
+    // «взведённое» состояние до следующего отпускания кнопки
+    window.addEventListener('blur', function() { pressStartedOn = null; });
 })();

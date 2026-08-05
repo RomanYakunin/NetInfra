@@ -1,0 +1,164 @@
+/* ============================================================
+   modules/monitoring/monitoring.css
+   Страница «Панель»: активные проблемы из Zabbix.
+
+   Цвета уровней важности взяты те же, что в интерфейсе Zabbix, —
+   дежурный смотрит на обе системы и не должен переучиваться.
+   ============================================================ */
+.mon-page {
+    padding: 1.5rem;
+    --sev-0: #97aab3;   /* не классифицировано */
+    --sev-1: #7499ff;   /* информация          */
+    --sev-2: #ffc859;   /* предупреждение      */
+    --sev-3: #ffa059;   /* средняя             */
+    --sev-4: #e97659;   /* высокая             */
+    --sev-5: #e45959;   /* чрезвычайная        */
+}
+
+/* ---------- Панель управления ---------- */
+.mon-toolbar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.9rem;
+    margin-bottom: 1.1rem;
+}
+.mon-search {
+    display: flex; align-items: center; gap: 0.5rem;
+    background: var(--input-bg); border: 1px solid var(--border-color);
+    border-radius: 8px; padding: 0.4rem 0.8rem;
+    flex: 1 1 280px; min-width: 200px;
+}
+.mon-search input {
+    background: transparent; border: none; outline: none;
+    color: var(--text-primary); font-size: 0.95rem; width: 100%;
+}
+.mon-search .search-icon { color: var(--text-secondary); }
+
+.mon-check {
+    display: flex; align-items: center; gap: 0.4rem;
+    font-size: 0.85rem; color: var(--text-secondary);
+    cursor: pointer; user-select: none;
+}
+.mon-check input { cursor: pointer; }
+
+.mon-updated { font-size: 0.78rem; color: var(--text-secondary); margin-left: auto; }
+
+/* ---------- Плитки уровней важности ---------- */
+.mon-severity-tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.6rem;
+    margin-bottom: 1.1rem;
+}
+.mon-tile {
+    display: flex; flex-direction: column; gap: 0.15rem;
+    padding: 0.7rem 0.9rem;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    border-left: 5px solid var(--tile-color, var(--border-color));
+    background: var(--bg-card);
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s;
+    font-family: inherit; text-align: left;
+}
+.mon-tile:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.18); }
+/* Выбранная плитка = включённый фильтр по этому уровню */
+.mon-tile.active {
+    border-color: var(--tile-color, var(--accent));
+    background: color-mix(in srgb, var(--tile-color, var(--accent)) 14%, var(--bg-card));
+}
+.mon-tile-count { font-size: 1.5rem; font-weight: 700; line-height: 1; color: var(--text-primary); }
+.mon-tile-label { font-size: 0.74rem; color: var(--text-secondary); }
+.mon-tile.zero .mon-tile-count { color: var(--text-secondary); opacity: 0.55; }
+
+/* ---------- Сообщение о состоянии ---------- */
+.mon-state {
+    padding: 1rem 1.2rem;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    margin-bottom: 1.1rem;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    line-height: 1.55;
+}
+.mon-state.error   { border-left: 5px solid var(--danger, #e74c3c); }
+.mon-state.warning { border-left: 5px solid #ffa059; }
+.mon-state code {
+    background: var(--table-hover, rgba(128,128,128,0.12));
+    padding: 0.1rem 0.35rem; border-radius: 4px;
+    font-size: 0.85em;
+}
+.mon-state-title { font-weight: 600; margin-bottom: 0.35rem; }
+
+/* ---------- Таблица проблем ---------- */
+.mon-table-wrap {
+    background: var(--bg-card);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    overflow-x: auto;
+}
+.mon-table { width: 100%; border-collapse: collapse; font-size: 0.87rem; min-width: 900px; }
+.mon-table thead th {
+    background: var(--bg-sidebar);
+    padding: 0.7rem 0.9rem;
+    text-align: left; font-weight: 600; font-size: 0.78rem;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
+    position: sticky; top: 0; z-index: 2;
+}
+.mon-table tbody td {
+    padding: 0.6rem 0.9rem;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+    vertical-align: top;
+}
+.mon-table tbody tr:hover { background: var(--table-hover); }
+/* Строку красит уровень важности — как в списке проблем Zabbix */
+.mon-table tbody tr[data-sev] td:first-child { border-left: 4px solid transparent; }
+.mon-table tbody tr[data-sev="0"] td:first-child { border-left-color: var(--sev-0); }
+.mon-table tbody tr[data-sev="1"] td:first-child { border-left-color: var(--sev-1); }
+.mon-table tbody tr[data-sev="2"] td:first-child { border-left-color: var(--sev-2); }
+.mon-table tbody tr[data-sev="3"] td:first-child { border-left-color: var(--sev-3); }
+.mon-table tbody tr[data-sev="4"] td:first-child { border-left-color: var(--sev-4); }
+.mon-table tbody tr[data-sev="5"] td:first-child { border-left-color: var(--sev-5); }
+
+.mon-sev-badge {
+    display: inline-block; padding: 0.15rem 0.5rem;
+    border-radius: 4px; font-size: 0.74rem; font-weight: 600;
+    color: #1a1a1a; white-space: nowrap;
+}
+.mon-time { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mon-time small { display: block; color: var(--text-secondary); font-size: 0.72rem; }
+.mon-host { font-weight: 600; }
+.mon-host small { display: block; font-weight: 400; color: var(--text-secondary); font-size: 0.74rem; }
+.mon-duration { font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--text-secondary); }
+
+.mon-ack { font-size: 0.76rem; font-weight: 600; }
+.mon-ack.yes { color: var(--success, #27ae60); }
+.mon-ack.no  { color: var(--danger, #e74c3c); }
+
+.mon-tags { margin-top: 0.25rem; display: flex; flex-wrap: wrap; gap: 0.25rem; }
+.mon-tag {
+    font-size: 0.68rem; padding: 0.05rem 0.35rem;
+    border-radius: 4px; background: var(--table-hover, rgba(128,128,128,0.15));
+    color: var(--text-secondary);
+}
+
+.mon-link { color: var(--accent); text-decoration: none; font-size: 0.8rem; }
+.mon-link:hover { text-decoration: underline; }
+.mon-nomatch { font-size: 0.78rem; color: var(--text-secondary); font-style: italic; }
+
+.mon-empty { text-align: center; padding: 2.5rem 1rem; color: var(--text-secondary); }
+.mon-footer { margin-top: 0.9rem; font-size: 0.82rem; color: var(--text-secondary); }
+
+/* Подсказки в форме настроек подключения */
+.zbx-hint {
+    display: block; margin-top: 0.25rem;
+    font-size: 0.75rem; color: var(--text-secondary); line-height: 1.4;
+}
+.zbx-hint code {
+    background: var(--table-hover, rgba(128,128,128,0.12));
+    padding: 0.05rem 0.3rem; border-radius: 3px;
+}
+#zabbixSettingsModal .mon-state { margin: 0.8rem 0 0; }

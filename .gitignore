@@ -1,1 +1,11 @@
 .claude/
+
+# Учётные данные Zabbix — в репозиторий не попадают
+config/zabbix.php
+config/zabbix.backup.php
+
+# Отчёты браузерных проверок
+tools/pcresult.txt
+
+# Загруженные пользователями файлы
+uploads/

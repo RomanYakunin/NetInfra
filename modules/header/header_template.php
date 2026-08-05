@@ -6,6 +6,7 @@ $pageTitles = [
     'warehouse'        => '📦 Склады',
     'checklist'        => '✅ Чек-лист',
     'dashboard'        => '📊 Дашборд',
+    'monitoring'       => '🚨 Панель',
     'database_manager' => '🗄️ База знаний',
     'users'            => '👥 Пользователи',
     'journal'          => '📋 Журнал действий',
@@ -37,8 +38,10 @@ $pageTitle = $pageTitles[$page ?? ''] ?? 'NetInfra Manager';
             <div class="stat-block"><span><?= icon('assets/icons/rack.png', ['class' => 'icon-md']) ?></span><span class="stat-value"><?= $allNodes ?></span><span class="stat-label">Всего узлов</span></div>
             <div class="stat-block"><?= icon('assets/icons/nodes.png', ['class' => 'icon-md']) ?></span><span class="stat-value"><?= $allDevices ?></span><span class="stat-label">Всего устройств</span></div>
         <?php elseif ($page === 'phones'): ?>
-            <div class="stat-block"><span class="stat-dot green"></span><span class="stat-value"><?= $activePhones ?></span><span class="stat-label">Активных телефонов</span></div>
-            <div class="stat-block"><span class="stat-dot red"></span><span class="stat-value"><?= $inactivePhones ?></span><span class="stat-label">Не активных телефонов</span></div>
+            <div class="stat-block"><span class="stat-value"><?= $allPhones ?></span><span class="stat-label">Всего телефонов</span></div>
+            <div class="stat-block"><span class="stat-dot green"></span><span class="stat-value"><?= $issuedPhones ?></span><span class="stat-label">Выдано</span></div>
+            <div class="stat-block"><span class="stat-dot red"></span><span class="stat-value"><?= $stockPhones ?></span><span class="stat-label">На складе</span></div>
+            <div class="stat-block"><span class="stat-value"><?= $sealedBoxes ?></span><span class="stat-label">Коробок не вскрыто</span></div>
         <?php endif; ?>
         <!-- <button class="btn-icon" onclick="toggleRightPanel()">🗄️</button> -->
     </div>
