@@ -90,12 +90,16 @@
 
         <div class="form-group">
             <label>Папка хранения</label>
-            <input type="text" id="stDocsRoot" placeholder="\\fileserver\share\Документы связи">
+            <div class="st-path-row">
+                <input type="text" id="stDocsRoot" placeholder="\\fileserver\share\Документы связи">
+                <button type="button" class="btn secondary" id="stBrowseBtn">Обзор…</button>
+            </div>
             <small class="scan-hint">
-                Сетевой или локальный путь. Папку можно оставить пустой — подпапки
-                подразделений и годов создаются сами. Доступ к сетевому ресурсу
-                нужен учётной записи, под которой работает веб-сервер: к сети он
-                обращается от своего имени, а не от имени пользователя.
+                Путь можно вписать вручную или выбрать кнопкой «Обзор». Папку можно
+                оставить пустой — подпапки подразделений и годов создаются сами.
+                Доступ к сетевому ресурсу нужен учётной записи, под которой работает
+                веб-сервер: к сети он обращается от своего имени, а не от имени
+                пользователя.
             </small>
         </div>
 
@@ -125,6 +129,33 @@
             <button type="button" class="btn secondary" onclick="closeStorageSettings()">Закрыть</button>
             <button type="button" class="btn secondary" id="stCreateFoldersBtn">Создать папки подразделений</button>
             <button type="button" class="btn" id="stSaveBtn">Сохранить</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- Обзор папок. Системный диалог выбора папки браузеру недоступен —
+     страница не должна узнавать структуру дисков, — поэтому проводник
+     рисуется сам: сервер перечисляет каталоги, пользователь ходит мышью. -->
+<div class="add-form-modal" id="folderBrowserModal">
+    <div class="modal-content" style="max-width: 640px;">
+        <h3>Выбор папки</h3>
+
+        <div class="fb-toolbar">
+            <button type="button" class="btn secondary small" id="fbUpBtn" title="На уровень выше">↑</button>
+            <input type="text" id="fbPath" placeholder="\\server\share или C:\"
+                   spellcheck="false" autocomplete="off">
+            <button type="button" class="btn secondary small" id="fbGoBtn">Перейти</button>
+        </div>
+
+        <div class="fb-list" id="fbList"></div>
+
+        <div class="scan-state" id="fbState" style="display:none;"></div>
+
+        <div class="modal-actions">
+            <button type="button" class="btn secondary" onclick="closeFolderBrowser()">Отмена</button>
+            <button type="button" class="btn secondary" id="fbMkdirBtn">Создать папку</button>
+            <button type="button" class="btn" id="fbSelectBtn" disabled>Выбрать эту папку</button>
         </div>
     </div>
 </div>

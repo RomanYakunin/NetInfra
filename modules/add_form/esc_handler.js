@@ -74,7 +74,10 @@
         expansionFormModal:     'closeExpansionForm',
         phoneImportModal:       'closePhoneImport',
         nodeImportModal:        'closeNodeImport',
-        zabbixSettingsModal:    'closeZabbixSettings'
+        zabbixSettingsModal:    'closeZabbixSettings',
+        scanModal:              'closeScanModal',
+        storageSettingsModal:   'closeStorageSettings',
+        folderBrowserModal:     'closeFolderBrowser'
     };
 
     /**

@@ -287,6 +287,106 @@
                 : '<p>Папка пуста. Нажмите «Создать папки подразделений».</p>'));
     }
 
+    // ---------------- Обзор папок ----------------
+    // Системный диалог выбора папки браузеру недоступен: страница не должна
+    // узнавать структуру дисков. Поэтому проводник рисуем сами — сервер
+    // перечисляет каталоги, пользователь ходит по ним мышью.
+    let fbPath = '';        // где сейчас находимся
+    let fbWritable = false; // можно ли писать в текущую папку
+
+    window.openFolderBrowser = function () {
+        const modal = document.getElementById('folderBrowserModal');
+        if (!modal) return;
+        setState('fbState', '', '');
+        // Стартуем от уже назначенной папки, если она задана
+        const current = (document.getElementById('stDocsRoot').value || '').trim();
+        if (typeof showModal === 'function') showModal(modal);
+        else modal.classList.add('visible');
+        fbLoad(current);
+    };
+
+    window.closeFolderBrowser = function () {
+        document.getElementById('folderBrowserModal')?.classList.remove('visible');
+    };
+
+    async function fbLoad(path) {
+        const list = document.getElementById('fbList');
+        list.innerHTML = '<div class="fb-empty">Загрузка…</div>';
+        setState('fbState', '', '');
+
+        try {
+            const data = await (await fetch('?ajax=storage_browse&path='
+                + encodeURIComponent(path || ''))).json();
+
+            if (!data.success) {
+                list.innerHTML = '<div class="fb-empty">Каталог недоступен</div>';
+                setState('fbState', 'error', '<p>' + esc(data.error) + '</p>');
+                document.getElementById('fbSelectBtn').disabled = true;
+                return;
+            }
+
+            fbPath = data.path || '';
+            fbWritable = !!data.writable;
+            document.getElementById('fbPath').value = fbPath;
+            document.getElementById('fbUpBtn').disabled = !data.parent && !fbPath;
+            // Диски выбирать нельзя — только каталог внутри
+            document.getElementById('fbSelectBtn').disabled = fbPath === '';
+
+            const items = data.is_root
+                ? (data.drives || []).map(d => ({ ...d, icon: '💽' }))
+                : (data.folders || []).map(f => ({ ...f, icon: '📁' }));
+
+            if (!items.length) {
+                list.innerHTML = '<div class="fb-empty">Вложенных папок нет'
+                    + (fbPath ? ' — можно выбрать эту' : '') + '</div>';
+            } else {
+                list.innerHTML = '';
+                items.forEach(it => {
+                    const row = document.createElement('div');
+                    row.className = 'fb-item';
+                    row.innerHTML = '<span class="fb-icon">' + it.icon + '</span>'
+                        + '<span class="fb-name">' + esc(it.name) + '</span>'
+                        + (it.writable ? '' : '<span class="fb-ro">только чтение</span>');
+                    row.onclick = () => fbLoad(it.path);
+                    list.appendChild(row);
+                });
+            }
+
+            if (fbPath && !fbWritable) {
+                setState('fbState', 'warning',
+                    '<p>В эту папку веб-сервер писать не может. Выбрать её можно, '
+                  + 'но сохранить документ не получится.</p>');
+            }
+        } catch (e) {
+            list.innerHTML = '<div class="fb-empty">Ошибка загрузки</div>';
+            setState('fbState', 'error', '<p>Не удалось получить список папок</p>');
+        }
+    }
+
+    async function fbMkdir() {
+        if (!fbPath) {
+            setState('fbState', 'warning', '<p>Сначала зайдите в папку, где создать новую</p>');
+            return;
+        }
+        const name = prompt('Название новой папки:');
+        if (!name) return;
+
+        const fd = new FormData();
+        fd.append('name', name);
+        try {
+            const data = await (await fetch('?ajax=storage_browse&action=mkdir&path='
+                + encodeURIComponent(fbPath), { method: 'POST', body: fd })).json();
+            if (!data.success) {
+                setState('fbState', 'error', '<p>' + esc(data.error) + '</p>');
+                return;
+            }
+            toast(data.existed ? 'Такая папка уже есть' : 'Папка создана', 'success');
+            fbLoad(fbPath);
+        } catch (e) {
+            setState('fbState', 'error', '<p>Ошибка сети</p>');
+        }
+    }
+
     window.openStorageSettings = async function () {
         const modal = document.getElementById('storageSettingsModal');
         if (!modal) return;
@@ -362,6 +462,25 @@
         document.getElementById('scanStartBtn')?.addEventListener('click', startScan);
         document.getElementById('scanDiagBtn')?.addEventListener('click', showDiagnostics);
         document.getElementById('stSaveBtn')?.addEventListener('click', saveStorage);
+
+        // Обзор папок
+        document.getElementById('stBrowseBtn')?.addEventListener('click', () => openFolderBrowser());
+        document.getElementById('fbUpBtn')?.addEventListener('click', async () => {
+            const data = await (await fetch('?ajax=storage_browse&path='
+                + encodeURIComponent(fbPath))).json();
+            fbLoad(data.parent || '');
+        });
+        document.getElementById('fbGoBtn')?.addEventListener('click',
+            () => fbLoad(document.getElementById('fbPath').value.trim()));
+        document.getElementById('fbPath')?.addEventListener('keydown', e => {
+            if (e.key === 'Enter') { e.preventDefault(); fbLoad(e.target.value.trim()); }
+        });
+        document.getElementById('fbMkdirBtn')?.addEventListener('click', fbMkdir);
+        document.getElementById('fbSelectBtn')?.addEventListener('click', () => {
+            // Путь показываем в привычном для Windows виде
+            document.getElementById('stDocsRoot').value = fbPath.replace(/\//g, '\\');
+            closeFolderBrowser();
+        });
         document.getElementById('stCreateFoldersBtn')?.addEventListener('click', createFolders);
 
         // Клик по затемнению закрывает окно

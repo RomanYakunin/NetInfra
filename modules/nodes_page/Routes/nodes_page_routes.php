@@ -153,6 +153,9 @@ return [
     'scan_document'           => 'modules/scanner/api/scan_document.php',
     // Диагностика «почему приложение не видит принтер»
     'scan_diagnose'           => 'modules/scanner/api/scan_diagnose.php',
+    // Обзор папок для выбора хранилища: системный диалог выбора папки
+    // браузеру недоступен, поэтому проводник рисуем сами
+    'storage_browse'          => 'modules/storage/api/storage_browse.php',
 
     // ----------------------------- ЖУРНАЛ ДЕЙСТВИЙ -----------------------------
     'get_logs'                => 'modules/journal/api/get_logs.php',

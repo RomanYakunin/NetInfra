@@ -56,3 +56,44 @@
 
 /* Кнопка сканирования в ряду с выбором файла */
 .ph-scan-btn { cursor: pointer; }
+
+/* ============================================================
+   Обзор папок для выбора хранилища
+   ============================================================ */
+.st-path-row { display: flex; gap: 0.5rem; align-items: center; }
+.st-path-row input { flex: 1; min-width: 0; }
+
+.fb-toolbar {
+    display: flex; gap: 0.5rem; align-items: center;
+    margin-bottom: 0.7rem;
+}
+.fb-toolbar input {
+    flex: 1; min-width: 0;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--border-color); border-radius: 6px;
+    background: var(--input-bg); color: var(--text-primary);
+    font-family: Consolas, 'Courier New', monospace; font-size: 0.85rem;
+}
+
+.fb-list {
+    height: 320px; overflow-y: auto;
+    border: 1px solid var(--border-color); border-radius: 8px;
+    background: var(--bg-card);
+}
+.fb-item {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.45rem 0.8rem;
+    cursor: pointer; font-size: 0.88rem;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-color);
+}
+.fb-item:last-child { border-bottom: none; }
+.fb-item:hover { background: var(--table-hover); }
+.fb-item .fb-icon { flex: 0 0 auto; opacity: 0.85; }
+.fb-item .fb-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Папка без права записи — выбирать её бессмысленно, но видеть надо */
+.fb-item .fb-ro {
+    flex: 0 0 auto; font-size: 0.72rem;
+    color: var(--warning, #f39c12);
+}
+.fb-empty { padding: 2rem 1rem; text-align: center; color: var(--text-secondary); font-size: 0.88rem; }
