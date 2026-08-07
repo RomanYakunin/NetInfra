@@ -415,6 +415,11 @@
         el('phoneFormAllowDup').value = '';
         showErr('phoneFormError', '');
 
+        // Проверка дубликатов: подсказки от прошлого открытия убираем,
+        // обработчики вешаем один раз на поле
+        clearDuplicateHints();
+        bindDuplicateChecks();
+
         let phone = null;
         if (id) {
             const data = await get('get_phone_detail', { id: id });
@@ -542,9 +547,112 @@
         closeModalAndReset('phoneFormModal');
     };
 
+    /* ============================================================
+       Живая проверка полей на дубликаты
+
+       Проверяем, пока пользователь заполняет, а не после «Сохранить»:
+       узнать о занятом серийнике в конце длинной формы — обидно.
+       Серверные проверки при сохранении остаются: клиентская подсказка
+       их дополняет, а не заменяет.
+
+       Поля, где повтор нормален (подразделение, модель, розетка), не
+       проверяются — предупреждать о них было бы шумом.
+       ============================================================ */
+    const DUP_FIELDS = {
+        phoneFormSerial: 'serial_number',
+        phoneFormMac:    'mac_address',
+        phoneFormNumber: 'phone_number',
+        phoneFormIp:     'ip_address',
+    };
+    const dupTimers = {};
+    const dupState  = {};   // id поля → 'error' | 'warning' | null
+
+    /** Показывает подсказку под полем и красит его рамку. */
+    function setDupHint(inputId, severity, message) {
+        const input = el(inputId);
+        if (!input) return;
+
+        dupState[inputId] = severity || null;
+        input.classList.toggle('ph-dup-error', severity === 'error');
+        input.classList.toggle('ph-dup-warning', severity === 'warning');
+
+        let hint = document.getElementById(inputId + 'DupHint');
+        if (!message) { if (hint) hint.remove(); return; }
+
+        if (!hint) {
+            hint = document.createElement('div');
+            hint.id = inputId + 'DupHint';
+            hint.className = 'ph-dup-hint';
+            input.parentNode.appendChild(hint);
+        }
+        hint.className = 'ph-dup-hint ' + (severity === 'error' ? 'is-error' : 'is-warning');
+        hint.textContent = message;
+    }
+
+    async function checkDuplicate(inputId) {
+        const field = DUP_FIELDS[inputId];
+        const input = el(inputId);
+        if (!field || !input) return;
+
+        const value = input.value.trim();
+        if (!value) { setDupHint(inputId, null, ''); return; }
+
+        const params = new URLSearchParams({
+            ajax: 'check_phone_duplicate',
+            field: field,
+            value: value,
+        });
+        const id = el('phoneFormId').value;
+        if (id) params.set('id', id);
+
+        try {
+            const data = await (await fetch('?' + params.toString())).json();
+            // Сбой проверки не должен мешать заполнять форму
+            if (!data.success || !data.checked) { setDupHint(inputId, null, ''); return; }
+            if (!data.taken) { setDupHint(inputId, null, ''); return; }
+            setDupHint(inputId, data.severity, data.message);
+        } catch (e) {
+            setDupHint(inputId, null, '');
+        }
+    }
+
+    /** Навешивает проверку на поля формы; вызывается при её открытии. */
+    function bindDuplicateChecks() {
+        Object.keys(DUP_FIELDS).forEach(inputId => {
+            const input = el(inputId);
+            if (!input || input.dataset.dupBound) return;
+            input.dataset.dupBound = '1';
+
+            input.addEventListener('input', () => {
+                clearTimeout(dupTimers[inputId]);
+                // Ждём паузу в наборе: иначе запрос уходил бы на каждый символ
+                dupTimers[inputId] = setTimeout(() => checkDuplicate(inputId), 450);
+            });
+            input.addEventListener('blur', () => {
+                clearTimeout(dupTimers[inputId]);
+                checkDuplicate(inputId);
+            });
+        });
+    }
+
+    /** Сбрасывает подсказки — при открытии формы и после сохранения. */
+    function clearDuplicateHints() {
+        Object.keys(DUP_FIELDS).forEach(id => setDupHint(id, null, ''));
+    }
+
     async function submitPhoneForm(e) {
         e.preventDefault();
         showErr('phoneFormError', '');
+
+        // Жёсткие дубли (серийник, MAC) не пропускаем: сервер всё равно
+        // откажет, но пользователю понятнее увидеть причину у поля
+        const blocking = Object.keys(dupState).filter(k => dupState[k] === 'error');
+        if (blocking.length) {
+            showErr('phoneFormError',
+                'Исправьте поля с дубликатами — они отмечены красным');
+            el(blocking[0])?.focus();
+            return;
+        }
 
         const form = el('phoneForm');
         const fd = new FormData(form);

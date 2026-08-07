@@ -102,6 +102,8 @@ return [
     // поэтому склад ведётся на уровне коробок, а не отдельных штук.
     'get_phones'              => 'modules/phones_page/api/GetData/get_phones.php',
     'get_phone_detail'        => 'modules/phones_page/api/GetData/get_phone_detail.php',
+    // Живая проверка полей формы на дубликаты, пока пользователь заполняет
+    'check_phone_duplicate'   => 'modules/phones_page/api/GetData/check_phone_duplicate.php',
     'get_phone_refs'          => 'modules/phones_page/api/GetData/get_phone_refs.php',
     'get_deliveries'          => 'modules/phones_page/api/GetData/get_deliveries.php',
     'get_box_detail'          => 'modules/phones_page/api/GetData/get_box_detail.php',

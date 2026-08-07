@@ -1,0 +1,1063 @@
+/* modules/phones_page/phones_page.css — страница «Телефоны».
+   Три вкладки: аппараты, поставки/коробки, доп. панели быстрого набора.
+   Коробка — основная единица склада, поэтому она нарисована карточкой
+   с полосой заполнения: сразу видно, сколько из неё уже разобрали. */
+
+.phones-page { padding: 1rem; }
+
+.ph-warning {
+    margin: 1rem;
+    padding: 0.7rem 1rem;
+    border-radius: 0.5rem;
+    background: rgba(255, 193, 7, 0.15);
+    border: 1px solid rgba(255, 193, 7, 0.5);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+}
+.ph-warning code { font-family: monospace; }
+
+/* ---------- Сводка ---------- */
+.ph-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+}
+.ph-summary-card {
+    flex: 1 1 8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.6rem 0.9rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.6rem;
+    background: var(--bg-card);
+}
+.ph-summary-accent { border-color: var(--accent); }
+.ph-summary-value { font-size: 1.25rem; font-weight: 600; color: var(--text-primary); }
+.ph-summary-label {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+/* ---------- Вкладки ---------- */
+.ph-tabs {
+    display: flex;
+    gap: 0.35rem;
+    margin-bottom: 0.9rem;
+    border-bottom: 2px solid var(--border-color);
+}
+.ph-tab {
+    padding: 0.5rem 1.1rem;
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    transition: color 0.15s, border-color 0.15s;
+}
+.ph-tab:hover { color: var(--text-primary); }
+.ph-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.ph-panel { display: none; }
+.ph-panel.active { display: block; }
+
+/* ---------- Панель фильтров ---------- */
+.ph-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 0.8rem;
+    padding: 0.7rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 0.6rem;
+}
+.ph-toolbar-spacer { flex: 1 1 auto; }
+.ph-search {
+    flex: 1 1 16rem;
+    min-width: 12rem;
+}
+/* Поле поиска и фильтры стоят на карточке того же цвета, что и они сами,
+   поэтому фон берём на тон контрастнее, а рамку — заметнее: иначе поле
+   сливается с панелью и его не видно ни в тёмной, ни в светлой теме */
+.ph-search,
+.ph-filter {
+    padding: 0.45rem 0.65rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.35rem;
+    background: var(--bg-body);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-family: inherit;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.12);
+}
+.ph-search::placeholder { color: var(--text-secondary); opacity: 0.85; }
+.ph-search:hover,
+.ph-filter:hover { border-color: var(--accent); }
+.ph-search:focus,
+.ph-filter:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,180,216,0.22);
+}
+
+/* В светлых темах вложенная тень читается хуже — добавляем контраст рамкой */
+:root[data-theme="light"] .ph-search,
+:root[data-theme="light"] .ph-filter,
+:root[data-theme="neutral"] .ph-search,
+:root[data-theme="neutral"] .ph-filter {
+    background: #fff;
+    border-color: rgba(0,0,0,0.22);
+    box-shadow: none;
+}
+
+/* ---------- Таблицы ---------- */
+.ph-table-wrapper {
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: calc(100vh - 26rem);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    background: var(--bg-card);
+}
+.ph-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.83rem;
+}
+.ph-table thead th {
+    padding: 0.5rem 0.7rem;
+    text-align: left;
+    background: var(--bg-header);
+    border-bottom: 2px solid var(--border-color);
+    color: var(--text-secondary);
+    font-weight: 600;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+.ph-table tbody td {
+    padding: 0.45rem 0.7rem;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+    vertical-align: top;
+}
+.ph-table tbody tr:hover { background: var(--table-hover, rgba(128,128,128,0.08)); }
+.ph-table tbody tr:last-child td { border-bottom: none; }
+
+.ph-sortable { cursor: pointer; user-select: none; }
+.ph-sortable:hover { color: var(--text-primary); }
+.ph-sortable.sort-asc::after  { content: ' ▲'; font-size: 0.65em; }
+.ph-sortable.sort-desc::after { content: ' ▼'; font-size: 0.65em; }
+
+.ph-empty {
+    padding: 1.6rem 1rem !important;
+    text-align: center;
+    color: var(--text-secondary);
+}
+.ph-error { color: var(--danger); }
+.ph-muted { color: var(--text-secondary); }
+.ph-mono { font-family: Consolas, monospace; font-size: 0.95em; }
+.ph-number { font-weight: 600; white-space: nowrap; }
+.ph-actions { white-space: nowrap; }
+.ph-actions .btn { margin-right: 0.15rem; }
+
+.ph-link {
+    border: none;
+    background: none;
+    padding: 0;
+    color: var(--accent);
+    cursor: pointer;
+    font: inherit;
+    text-decoration: underline dotted;
+}
+.ph-link:hover { color: var(--accent-hover, var(--accent)); }
+
+/* Строка кликабельна — открывает меню действий */
+#phTableBody tr[data-id] { cursor: pointer; }
+
+/* ---------- Меню действий по строке ---------- */
+.ph-menu {
+    position: fixed;
+    z-index: 5000;
+    min-width: 12rem;
+    padding: 0.25rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.45rem;
+    background: var(--bg-card);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+    animation: ph-menu-in 0.12s ease-out;
+}
+@keyframes ph-menu-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: none; }
+}
+.ph-menu-title {
+    padding: 0.3rem 0.6rem 0.35rem;
+    margin-bottom: 0.2rem;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.ph-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.4rem 0.6rem;
+    border: none;
+    border-radius: 0.3rem;
+    background: none;
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 0.82rem;
+    text-align: left;
+    cursor: pointer;
+}
+.ph-menu-item:hover { background: var(--table-hover, rgba(128,128,128,0.14)); }
+.ph-menu-item.danger { color: var(--danger); }
+.ph-menu-item.danger:hover { background: rgba(244,67,54,0.14); }
+.ph-menu-icon { width: 1.1rem; text-align: center; }
+
+/* ---------- Метки ---------- */
+.ph-badge {
+    display: inline-block;
+    padding: 0.05rem 0.4rem;
+    border-radius: 0.7rem;
+    font-size: 0.68rem;
+    background: rgba(128,128,128,0.2);
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+.ph-badge-ok  { background: rgba(76,175,80,0.2); color: var(--success, #4caf50); }
+.ph-badge-exp { background: rgba(0,180,216,0.22); color: var(--accent); font-weight: 600; }
+.ph-badge-box { background: rgba(0,180,216,0.18); color: var(--accent); font-size: 0.78rem; padding: 0.15rem 0.55rem; }
+
+.ph-status {
+    display: inline-block;
+    padding: 0.08rem 0.45rem;
+    border-radius: 0.7rem;
+    font-size: 0.72rem;
+    white-space: nowrap;
+}
+.ph-status-active { background: rgba(76,175,80,0.18);  color: var(--success, #4caf50); }
+.ph-status-stock  { background: rgba(33,150,243,0.18); color: var(--info, #2196f3); }
+.ph-status-repair { background: rgba(255,152,0,0.2);   color: #ff9800; }
+.ph-status-dead   { background: rgba(244,67,54,0.18);  color: var(--danger, #f44336); }
+
+/* ---------- Пагинация ---------- */
+.ph-pagination-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 0.7rem;
+}
+.ph-pagination { display: flex; align-items: center; gap: 0.25rem; flex-wrap: wrap; }
+.ph-page-info { margin-right: 0.6rem; font-size: 0.78rem; color: var(--text-secondary); }
+.ph-page-btn {
+    min-width: 1.9rem;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.3rem;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+.ph-page-btn:hover:not(:disabled) { border-color: var(--accent); }
+.ph-page-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.ph-page-btn:disabled { opacity: 0.4; cursor: default; }
+.ph-page-gap { color: var(--text-secondary); padding: 0 0.15rem; }
+
+.ph-perpage { display: flex; align-items: center; gap: 0.4rem; }
+.ph-perpage label { font-size: 0.75rem; color: var(--text-secondary); }
+.ph-perpage select {
+    padding: 0.25rem 0.4rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.3rem;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.8rem;
+}
+
+/* ============================================================
+   ПОСТАВКИ И КОРОБКИ
+   ============================================================ */
+.ph-deliveries { display: flex; flex-direction: column; gap: 0.9rem; }
+
+.ph-delivery {
+    border: 1px solid var(--border-color);
+    border-radius: 0.6rem;
+    background: var(--bg-card);
+    overflow: hidden;
+}
+.ph-delivery-head {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    padding: 0.6rem 0.9rem;
+    background: var(--bg-header);
+    border-bottom: 1px solid var(--border-color);
+}
+.ph-delivery-title { display: flex; align-items: baseline; gap: 0.45rem; flex-wrap: wrap; }
+.ph-delivery-doc { font-weight: 600; color: var(--text-primary); }
+.ph-delivery-meta { font-size: 0.76rem; color: var(--text-secondary); margin-left: auto; }
+.ph-delivery-actions { display: flex; gap: 0.2rem; }
+
+/* Коробки — плитками: их много и все одинаковые */
+.ph-box-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+    gap: 0.6rem;
+    padding: 0.8rem 0.9rem;
+}
+.ph-box-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.28rem;
+    padding: 0.6rem 0.7rem;
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--border-color);
+    border-radius: 0.45rem;
+    background: var(--bg-body, var(--bg-card));
+}
+/* Цвет левой кромки — состояние коробки */
+.ph-box-закрыта   { border-left-color: #9e9e9e; }
+.ph-box-вскрыта   { border-left-color: var(--accent); }
+.ph-box-разобрана { border-left-color: var(--success, #4caf50); }
+
+.ph-box-top { display: flex; justify-content: space-between; align-items: baseline; gap: 0.4rem; }
+.ph-box-num { font-weight: 600; font-size: 0.9rem; color: var(--text-primary); }
+.ph-box-status { font-size: 0.68rem; color: var(--text-secondary); text-transform: lowercase; }
+.ph-box-model { font-size: 0.8rem; color: var(--text-primary); }
+.ph-box-type  { font-size: 0.7rem; color: var(--text-secondary); }
+
+.ph-box-bar {
+    height: 5px;
+    border-radius: 3px;
+    background: rgba(128,128,128,0.25);
+    overflow: hidden;
+}
+.ph-box-bar span { display: block; height: 100%; background: var(--accent); }
+.ph-box-count { font-size: 0.72rem; color: var(--text-secondary); }
+.ph-box-actions { display: flex; flex-wrap: wrap; gap: 0.2rem; margin-top: 0.15rem; }
+
+/* ============================================================
+   ФОРМЫ И КАРТОЧКИ
+   ============================================================ */
+.ph-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+    gap: 0.6rem 0.9rem;
+    margin-bottom: 0.6rem;
+}
+.ph-form-checks {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-top: 1.1rem;
+}
+.ph-form-checks label {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+/* Флажок не должен растягиваться на всю ширину, как остальные поля формы */
+.add-form-modal .ph-form-checks input[type="checkbox"] {
+    width: auto;
+    min-height: 0;
+    margin: 0;
+}
+
+/* Недоступная кнопка должна выглядеть недоступной: в окне импорта
+   «Импортировать» заблокирована до проверки файла, а по виду этого
+   было не понять */
+.add-form-modal .btn:disabled,
+.add-form-modal .btn[disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.ph-fieldset {
+    margin: 0.4rem 0 0.8rem;
+    padding: 0.6rem 0.8rem 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+}
+.ph-fieldset legend {
+    padding: 0 0.4rem;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+.ph-hint { display: block; font-size: 0.75rem; color: var(--text-secondary); line-height: 1.4; }
+
+/* Постоянный контейнер сообщения об ошибке формы.
+   Нарочно НЕ .form-error: resetModalForm() удаляет элементы с этим классом
+   (там это разовые подсказки валидации), и статический блок исчезал
+   при первом же открытии формы вместе с возможностью показать ошибку. */
+.ph-form-error {
+    margin-top: 0.4rem;
+    padding: 0.4rem 0.6rem;
+    border-radius: 0.35rem;
+    background: rgba(244, 67, 54, 0.12);
+    color: var(--danger);
+    font-size: 0.83rem;
+    line-height: 1.4;
+}
+
+/* Карточка телефона / коробки.
+   Селектор из двух классов обязателен: общее правило
+   .add-form-modal .modal-content задаёт max-width: 700px и по
+   специфичности перебивает одиночный класс. */
+.add-form-modal .modal-content.ph-detail-content {
+    width: min(920px, 96vw);
+    max-width: 96vw;
+    min-width: 0;
+    box-sizing: border-box;
+}
+.ph-detail { max-height: 68vh; overflow-y: auto; padding-right: 0.4rem; }
+
+.ph-detail-grid {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.25rem 0.9rem;
+    font-size: 0.85rem;
+}
+.ph-detail-key { color: var(--text-secondary); }
+.ph-detail-val { color: var(--text-primary); word-break: break-word; }
+
+/* ============================================================
+   КАРТОЧКА ТЕЛЕФОНА
+   Шапка с номером и статусами, дальше сведения блоками по смыслу:
+   сплошной список из двадцати строк читать невозможно.
+   ============================================================ */
+.ph-hero {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 0.9rem 1.1rem;
+    margin-bottom: 0.9rem;
+    border-radius: 0.6rem;
+    background: linear-gradient(135deg, rgba(0,180,216,0.16), rgba(0,180,216,0.05));
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--accent);
+}
+.ph-hero-num {
+    font-size: 1.9rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+}
+.ph-hero-main { flex: 1 1 12rem; min-width: 0; }
+.ph-hero-user {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    word-break: break-word;
+}
+.ph-hero-sub { margin-top: 0.15rem; font-size: 0.8rem; color: var(--text-secondary); }
+.ph-hero-flags { display: flex; gap: 0.3rem; flex-wrap: wrap; align-items: center; }
+
+.ph-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: 0.6rem;
+    margin-bottom: 0.3rem;
+}
+.ph-card {
+    padding: 0.65rem 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    background: var(--bg-card);
+    min-width: 0;
+}
+.ph-card-title {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0 0 0.45rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.76rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+}
+.ph-card-title span { font-size: 0.95rem; }
+
+/* Подпись и значение в две колонки: значения выстраиваются друг под другом */
+.ph-card-list {
+    display: grid;
+    grid-template-columns: minmax(6rem, auto) 1fr;
+    gap: 0.28rem 0.7rem;
+    margin: 0;
+    font-size: 0.82rem;
+}
+.ph-card-list dt { color: var(--text-secondary); }
+.ph-card-list dd {
+    margin: 0;
+    color: var(--text-primary);
+    word-break: break-word;
+}
+
+/* Кнопки внутри карточки — единый вид со страницей */
+.ph-detail .btn.small {
+    padding: 0.28rem 0.7rem;
+    border-radius: 0.35rem;
+    font-size: 0.78rem;
+}
+.ph-detail-actions { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.5rem; }
+
+.ph-detail-h {
+    margin: 1.1rem 0 0.4rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.85rem;
+    color: var(--text-primary);
+}
+.ph-detail-empty { font-size: 0.82rem; padding: 0.3rem 0; }
+.ph-detail-origin { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; font-size: 0.82rem; }
+
+.ph-subtable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.79rem;
+    margin-bottom: 0.4rem;
+}
+.ph-subtable th {
+    padding: 0.3rem 0.5rem;
+    text-align: left;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600;
+    white-space: nowrap;
+}
+.ph-subtable td {
+    padding: 0.3rem 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+    vertical-align: top;
+}
+
+/* ============================================================
+   ДОКУМЕНТЫ: накладные, расписки, акты
+   Просмотр раскрывается прямо под строкой документа — уходить
+   на другую вкладку, чтобы посмотреть скан, не нужно.
+   ============================================================ */
+.ph-doc-upload {
+    padding: 0.55rem 0.7rem;
+    margin-bottom: 0.6rem;
+    border: 1px dashed var(--border-color);
+    border-radius: 0.45rem;
+}
+.ph-doc-upload-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+}
+/* Общее правило .add-form-modal input задаёт width: 100% и min-height: 60px —
+   от него поля выстраивались в столбец и были непомерно высокими.
+   Здесь строка компактная, поэтому размеры задаём явно. */
+.add-form-modal .ph-doc-upload-row input,
+.add-form-modal .ph-doc-upload-row select {
+    width: auto;
+    min-height: 0;
+    padding: 0.35rem 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.3rem;
+    background: var(--input-bg, var(--bg-card));
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.8rem;
+}
+.add-form-modal .ph-doc-file   { flex: 2 1 15rem; min-width: 11rem; }
+.add-form-modal .ph-doc-title  { flex: 2 1 11rem; min-width: 8rem; }
+.add-form-modal .ph-doc-number { flex: 1 1 7rem;  min-width: 6rem; }
+.add-form-modal .ph-doc-type   { flex: 0 1 9rem; }
+.add-form-modal .ph-doc-date   { flex: 0 1 9rem; }
+
+.ph-doc-wholebox {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.4rem;
+    font-size: 0.78rem;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+.add-form-modal .ph-doc-wholebox input {
+    width: auto;
+    min-height: 0;
+    margin: 0;
+}
+.ph-doc-hint  { margin-top: 0.35rem; font-size: 0.72rem; color: var(--text-secondary); line-height: 1.4; }
+
+/* ---------- Выбор файла ----------
+   Родной input[type=file] выглядит чужеродно и по-разному в разных
+   браузерах, поэтому он скрыт, а кнопкой служит его подпись. */
+.ph-file-row {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+}
+.add-form-modal .ph-file-input {
+    position: absolute;
+    width: 1px; height: 1px;
+    opacity: 0;
+    overflow: hidden;
+    padding: 0;
+    min-height: 0;
+}
+.ph-file-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.9rem;
+    border: 1px solid var(--accent);
+    border-radius: 0.4rem;
+    background: rgba(0, 180, 216, 0.12);
+    color: var(--accent);
+    font-size: 0.83rem;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, box-shadow 0.15s;
+}
+.ph-file-btn:hover { background: rgba(0, 180, 216, 0.22); }
+/* Видимая рамка при переходе с клавиатуры: сам input скрыт */
+.ph-file-input:focus-visible + .ph-file-name,
+.ph-file-input:focus + .ph-file-btn,
+.ph-file-btn:focus-within { box-shadow: 0 0 0 2px rgba(0, 180, 216, 0.35); }
+.ph-file-icon { font-size: 0.95rem; }
+
+.ph-file-name {
+    flex: 1 1 8rem;
+    min-width: 0;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.ph-file-clear {
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 0.1rem 0.3rem;
+}
+.ph-file-clear:hover { color: var(--danger); }
+
+/* Уже прикреплённые документы в форме — компактными метками */
+.ph-doc-attached { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 0.5rem; }
+.ph-doc-attached-empty { font-size: 0.78rem; }
+.ph-doc-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    max-width: 100%;
+    padding: 0.15rem 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.7rem;
+    font-size: 0.75rem;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.ph-doc-form-row { margin-bottom: 0.4rem; }
+
+.ph-doc-list { display: flex; flex-direction: column; gap: 0.35rem; }
+
+.ph-doc {
+    border: 1px solid var(--border-color);
+    border-radius: 0.45rem;
+    background: var(--bg-card);
+    overflow: hidden;
+}
+.ph-doc.open { border-color: var(--accent); }
+
+.ph-doc-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.45rem 0.6rem;
+    cursor: pointer;
+}
+.ph-doc[data-inline="0"] .ph-doc-head { cursor: default; }
+.ph-doc-head:hover { background: var(--table-hover, rgba(128,128,128,0.08)); }
+
+.ph-doc-icon { font-size: 1.15rem; line-height: 1.3; }
+.ph-doc-main { flex: 1 1 auto; min-width: 0; }
+.ph-doc-name {
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    word-break: break-word;
+}
+.ph-doc-meta { margin-top: 0.12rem; font-size: 0.72rem; color: var(--text-secondary); }
+.ph-doc-notes { margin-top: 0.15rem; font-size: 0.74rem; color: var(--text-secondary); font-style: italic; }
+.ph-doc-missing { color: var(--danger); margin-left: 0.3rem; }
+.ph-doc-actions { display: flex; gap: 0.2rem; flex-shrink: 0; align-items: center; }
+.ph-doc-actions a.btn { text-decoration: none; display: inline-flex; align-items: center; }
+
+/* Плавное раскрытие: анимируем max-height, содержимое скрыто overflow */
+.ph-doc-viewer {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease;
+    background: #1a1c20;
+}
+.ph-doc-viewer-inner { padding: 0.5rem; }
+.ph-doc-frame {
+    width: 100%;
+    height: 70vh;
+    border: none;
+    border-radius: 0.3rem;
+    background: #fff;
+}
+.ph-doc-image {
+    display: block;
+    max-width: 100%;
+    max-height: 70vh;
+    margin: 0 auto;
+    border-radius: 0.3rem;
+}
+
+/* ---------- Предпросмотр Word / RTF / ODT ----------
+   Браузер эти форматы не рисует, поэтому сервер отдаёт разобранный HTML,
+   а здесь он показывается «листом», как в текстовом редакторе. */
+.ph-doc-loading, .ph-doc-fallback {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 2rem 1rem;
+    color: #b9c0c8;
+    font-size: 0.85rem;
+    text-align: center;
+}
+.ph-doc-html {
+    max-height: 70vh;
+    overflow: auto;
+    padding: 0.4rem;
+}
+.doc-page {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 2rem 2.4rem;
+    background: #fff;
+    color: #1b1b1b;
+    border-radius: 0.3rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+    font-family: 'Times New Roman', Georgia, serif;
+    font-size: 0.92rem;
+    line-height: 1.5;
+}
+.doc-note {
+    margin: -0.6rem -0.8rem 1rem;
+    padding: 0.45rem 0.8rem;
+    border-radius: 0.3rem;
+    background: #fff4d6;
+    border: 1px solid #e8c979;
+    color: #6b5312;
+    font-family: inherit;
+    font-size: 0.78rem;
+}
+.doc-p { margin: 0 0 0.55rem; }
+.doc-h { margin: 1rem 0 0.5rem; font-size: 1.05rem; font-weight: 700; }
+.doc-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.6rem 0 0.9rem;
+    font-size: 0.85rem;
+}
+.doc-table td {
+    padding: 0.3rem 0.5rem;
+    border: 1px solid #b9b9b9;
+    vertical-align: top;
+}
+
+/* ---------- Вскрытие коробки ---------- */
+.ph-openbox-head {
+    padding: 0.5rem 0.7rem;
+    margin-bottom: 0.5rem;
+    border-radius: 0.4rem;
+    background: var(--table-hover, rgba(128,128,128,0.08));
+    font-size: 0.84rem;
+}
+.ph-openbox-list {
+    max-height: 44vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin: 0.5rem 0;
+    padding-right: 0.3rem;
+}
+.ph-openbox-row {
+    display: grid;
+    grid-template-columns: 1.6rem 1fr 1fr 1.6rem;
+    align-items: center;
+    gap: 0.4rem;
+}
+.ph-openbox-n { font-size: 0.75rem; color: var(--text-secondary); text-align: right; }
+/* min-height: 60px из общего правила модалки делает строки списка
+   непомерно высокими — здесь нужны компактные поля */
+.add-form-modal .ph-openbox-row input {
+    width: 100%;
+    min-height: 0;
+    padding: 0.32rem 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.3rem;
+    background: var(--input-bg, var(--bg-card));
+    color: var(--text-primary);
+    font-family: Consolas, monospace;
+    font-size: 0.8rem;
+}
+.ph-openbox-row input:focus { outline: none; border-color: var(--accent); }
+.add-form-modal .ph-openbox-blank input { width: auto; min-height: 0; margin: 0; }
+.ph-openbox-del {
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 0.1rem;
+}
+.ph-openbox-del:hover { color: var(--danger); }
+
+.ph-openbox-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+}
+.ph-openbox-blank {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+/* ---------- Импорт ---------- */
+/* Два класса в селекторе — иначе max-width: 700px из общего правила
+   .add-form-modal .modal-content оставляет окно узким и таблица-пример
+   в него не помещается. Прокрутка при этом живёт внутри таблицы,
+   а не растягивает форму. */
+.add-form-modal .modal-content.ph-import-content {
+    width: min(920px, 96vw);
+    max-width: 96vw;
+    min-width: 0;
+    box-sizing: border-box;
+}
+.ph-import-content > * { min-width: 0; max-width: 100%; }
+
+/* Инструкция по структуре файла. Свёрнута в <details>: опытному
+   пользователю она не мешает, новому — объясняет, почему «правильный»
+   файл может загрузиться пустым. */
+.ph-guide {
+    margin-bottom: 0.9rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    background: var(--table-hover, rgba(128,128,128,0.06));
+}
+.ph-guide > summary {
+    padding: 0.55rem 0.8rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    user-select: none;
+}
+.ph-guide > summary:hover { color: var(--accent); }
+.ph-guide-body {
+    max-height: 46vh;
+    overflow-y: auto;
+    overflow-x: hidden;      /* по горизонтали прокручивается только таблица */
+    padding: 0 0.8rem 0.8rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    min-width: 0;
+}
+.ph-guide-body h5 {
+    margin: 0.8rem 0 0.3rem;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+}
+.ph-guide-body p { margin: 0 0 0.4rem; }
+.ph-guide-lead { color: var(--text-primary); }
+.ph-guide-body code {
+    padding: 0.05rem 0.28rem;
+    border-radius: 0.2rem;
+    background: rgba(128,128,128,0.18);
+    font-family: Consolas, monospace;
+    font-size: 0.95em;
+}
+.ph-guide-note { font-size: 0.75rem; font-style: italic; }
+
+.ph-guide-sheets { display: flex; flex-wrap: wrap; gap: 0.25rem; margin: 0.4rem 0; }
+.ph-guide-sheet {
+    padding: 0.1rem 0.45rem;
+    border-radius: 0.7rem;
+    background: rgba(0,180,216,0.15);
+    color: var(--accent);
+    font-size: 0.72rem;
+    white-space: nowrap;
+}
+
+/* Понятные столбцы — плитками, а не строкой через запятую */
+.ph-guide-cols { display: flex; flex-wrap: wrap; gap: 0.22rem; margin: 0.35rem 0; }
+.ph-guide-cols span {
+    padding: 0.1rem 0.42rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.25rem;
+    font-size: 0.72rem;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+/* ---------- Наглядный пример листа ----------
+   Показать, как выглядит таблица, доходчивее, чем перечислять
+   названия столбцов: видно и строку заголовков, и формат данных. */
+.ph-sheet-demo {
+    margin: 0.5rem 0 0.7rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.4rem;
+    overflow: hidden;
+    background: var(--bg-card);
+    min-width: 0;
+    max-width: 100%;
+}
+.ph-sheet-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1px;
+    padding: 0.25rem 0.3rem 0;
+    background: rgba(128,128,128,0.12);
+}
+.ph-sheet-tab {
+    padding: 0.25rem 0.6rem;
+    border: none;
+    border-radius: 0.25rem 0.25rem 0 0;
+    font-family: inherit;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    background: rgba(128,128,128,0.12);
+    white-space: nowrap;
+    cursor: pointer;
+}
+.ph-sheet-tab:hover { color: var(--text-primary); }
+.ph-sheet-tab.active {
+    background: var(--bg-card);
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.ph-sheet-pane { display: none; }
+.ph-sheet-pane.active { display: block; }
+
+/* Прокрутка широкой таблицы живёт здесь, наружу не выходит */
+.ph-sheet-scroll {
+    overflow-x: auto;
+    max-width: 100%;
+}
+.ph-sheet {
+    border-collapse: collapse;
+    font-size: 0.7rem;
+    font-family: Consolas, monospace;
+    white-space: nowrap;
+    min-width: max-content;
+}
+.ph-sheet td {
+    padding: 0.2rem 0.5rem;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+/* Полоса с буквами столбцов и колонка с номерами строк — как в Excel */
+.ph-sheet-cols td,
+.ph-sheet-rown {
+    background: rgba(128,128,128,0.15);
+    color: var(--text-secondary);
+    text-align: center;
+    font-size: 0.65rem;
+}
+.ph-sheet-head td {
+    background: rgba(0,180,216,0.14);
+    color: var(--accent);
+    font-weight: 600;
+}
+.ph-sheet-head .ph-sheet-rown { background: rgba(128,128,128,0.15); color: var(--text-secondary); }
+.ph-sheet-legend {
+    padding: 0.35rem 0.55rem;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    border-top: 1px solid var(--border-color);
+}
+
+.ph-guide-list { margin: 0.3rem 0 0 1.1rem; padding: 0; }
+.ph-guide-list li { margin-bottom: 0.25rem; }
+
+.ph-import-result { max-height: 40vh; overflow-y: auto; margin: 0.6rem 0; }
+.ph-import-summary {
+    padding: 0.5rem 0.7rem;
+    margin-bottom: 0.5rem;
+    border-radius: 0.4rem;
+    background: var(--table-hover, rgba(128,128,128,0.08));
+    font-size: 0.83rem;
+    line-height: 1.5;
+}
+.ph-import-problems {
+    margin-top: 0.5rem;
+    font-size: 0.78rem;
+    color: #ff9800;
+}
+.ph-import-problems ul { margin: 0.25rem 0 0 1.1rem; padding: 0; }
+
+/* ============================================================
+   Подсветка полей с дубликатами
+   Красный — повтор недопустим (серийный номер, MAC).
+   Жёлтый — повтор возможен, но требует внимания (номер, IP).
+   ============================================================ */
+.ph-dup-error   { border-color: var(--danger, #e74c3c) !important; }
+.ph-dup-warning { border-color: var(--warning, #f39c12) !important; }
+
+.ph-dup-hint {
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    line-height: 1.35;
+}
+.ph-dup-hint.is-error   { color: var(--danger, #e74c3c); }
+.ph-dup-hint.is-warning { color: var(--warning, #f39c12); }
