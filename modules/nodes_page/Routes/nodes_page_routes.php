@@ -131,6 +131,8 @@ return [
     // get_phone_document отдаёт их только авторизованному пользователю.
     'get_phone_documents'     => 'modules/phones_page/api/GetData/get_phone_documents.php',
     'get_phone_document'      => 'modules/phones_page/api/GetData/get_phone_document.php',
+    // Word, RTF и ODT браузер не рисует — разбираем их на сервере в HTML
+    'preview_phone_document'  => 'modules/phones_page/api/GetData/preview_phone_document.php',
     'upload_phone_document'   => 'modules/phones_page/api/AddData/upload_phone_document.php',
     'delete_phone_document'   => 'modules/phones_page/api/DeleteData/delete_phone_document.php',
 
@@ -141,6 +143,16 @@ return [
     'zabbix_problems'         => 'modules/zabbix/api/zabbix_problems.php',
     'zabbix_settings'         => 'modules/zabbix/api/zabbix_settings.php',
     'zabbix_missing'          => 'modules/zabbix/api/zabbix_missing.php',
+
+    // ----------------------------- ХРАНИЛИЩЕ ДОКУМЕНТОВ И СКАНИРОВАНИЕ -----------------------------
+    // Сканы накладных лежат в назначаемой папке (может быть сетевой),
+    // а не внутри проекта. Сканирование идёт через WIA расширением
+    // com_dotnet — оно видит устройства машины, где работает NetInfra.
+    'storage_settings'        => 'modules/storage/api/storage_settings.php',
+    'scan_devices'            => 'modules/scanner/api/scan_devices.php',
+    'scan_document'           => 'modules/scanner/api/scan_document.php',
+    // Диагностика «почему приложение не видит принтер»
+    'scan_diagnose'           => 'modules/scanner/api/scan_diagnose.php',
 
     // ----------------------------- ЖУРНАЛ ДЕЙСТВИЙ -----------------------------
     'get_logs'                => 'modules/journal/api/get_logs.php',

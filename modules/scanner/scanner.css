@@ -1,0 +1,58 @@
+/* ============================================================
+   modules/scanner/scanner.css
+   Окно сканирования и настройки хранилища документов.
+   ============================================================ */
+.scan-row {
+    display: flex; gap: 0.8rem; flex-wrap: wrap;
+}
+.scan-row .form-group { flex: 1 1 140px; margin-bottom: 1rem; }
+
+.scan-hint {
+    display: block; margin-top: 0.3rem;
+    font-size: 0.75rem; color: var(--text-secondary); line-height: 1.45;
+}
+
+.scan-check {
+    display: flex; align-items: center; gap: 0.45rem;
+    font-weight: 400; cursor: pointer; user-select: none;
+}
+.scan-check input { width: auto; cursor: pointer; }
+
+.scan-state {
+    padding: 0.8rem 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    margin-bottom: 1rem;
+    font-size: 0.86rem; line-height: 1.5;
+    color: var(--text-primary);
+}
+.scan-state p { margin: 0.3rem 0 0; }
+.scan-state code {
+    background: var(--table-hover, rgba(128,128,128,0.12));
+    padding: 0.1rem 0.35rem; border-radius: 4px;
+    word-break: break-all;
+}
+.scan-state.error   { border-left: 4px solid var(--danger, #e74c3c); }
+.scan-state.warning { border-left: 4px solid var(--warning, #f39c12); }
+.scan-state.ok      { border-left: 4px solid var(--success, #27ae60); }
+
+/* Сканирование занимает секунды — без индикатора кажется, что зависло */
+.scan-progress {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.8rem 1rem; margin-bottom: 1rem;
+    border-radius: 8px;
+    background: var(--table-hover, rgba(128,128,128,0.1));
+    font-size: 0.86rem; color: var(--text-secondary);
+}
+.scan-spinner {
+    width: 16px; height: 16px; flex-shrink: 0;
+    border: 2px solid var(--border-color);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: scanSpin 0.8s linear infinite;
+}
+@keyframes scanSpin { to { transform: rotate(360deg); } }
+
+/* Кнопка сканирования в ряду с выбором файла */
+.ph-scan-btn { cursor: pointer; }
